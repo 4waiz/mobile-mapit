@@ -19,8 +19,8 @@ It allows users to **search for stores, view maps, and get directions** in a sim
 ---
 
 ## 🛠️ Tech Stack  
-- **Frontend:** HTML, CSS, JavaScript (or React if you use it)  
-- **Backend:** Node.js / Python (optional for data handling)  
+- **Frontend:** HTML, CSS, JavaScript  
+- **Backend:** Node.js / Python
 - **Database:** SQLite / JSON mock data  
 - **Tools:** Git, VS Code  
 
