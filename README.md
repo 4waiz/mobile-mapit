@@ -1,4 +1,4 @@
-# 🗺️ mapit  
+# 🗺️ mobile-mapit  
 **An Interactive Digital Wayfinding Kiosk Prototype**
 
 ---
