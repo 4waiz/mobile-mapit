@@ -6,33 +6,23 @@
   <title>Wayfinding Map</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    /* --- MODIFIED CSS --- */
     :root {
-      --panel: #ffffff; --border: #e0e0e0; --ink: #333333; --primary-blue: #007aff; --dev-panel-bg: #f8f9fa;
-      /* ==== Animated Nebula Gradient Colors ==== */
-      --nebula-start: #1c1d24;
-      --nebula-mid-orange: #dfd7d2;
-      --nebula-mid-grey: #a7aab1;
-      --nebula-end: #e8e9f3;
+      --panel: #ffffff; --border: #e0e0e0; --ink: #333333; --primary-blue: #4488d0; --dev-panel-bg: #81a9d0;
+      --nebula-start: #1c1d24; --nebula-mid-orange: #d6cac2;
+      --nebula-mid-grey: #a7aab1; --nebula-end: #3f4049;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: conic-gradient(at 0% 50%,
-        var(--nebula-start) 0%,
-        var(--nebula-mid-orange) 20%,
-        var(--nebula-start) 35%,
-        var(--nebula-mid-grey) 65%,
-        var(--nebula-start) 80%,
-        var(--nebula-end) 100%);
+        var(--nebula-start) 0%, var(--nebula-mid-orange) 20%,
+        var(--nebula-start) 35%, var(--nebula-mid-grey) 65%,
+        var(--nebula-start) 80%, var(--nebula-end) 100%);
       background-size: 200% 200%;
       animation: panBackground 60s linear infinite alternate;
     }
-    @keyframes panBackground {
-      0% { background-position: 0% 0%; }
-      100% { background-position: 100% 100%; }
-    }
+    @keyframes panBackground { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
     .bg-mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
     #mesh { display: block; width: 100%; height: 100%; }
     .app-container { display: flex; width: 100%; height: 100%; position: relative; z-index: 1; }
@@ -40,22 +30,31 @@
     body.dev-mode .dev-panel { display: flex; } .dev-panel h3 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; color: #666;} .dev-panel .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;} .dev-panel .vsep { height: 1px; background: var(--border); margin: 8px 0; } .dev-panel .btn { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; width: 100%; }
     .dev-panel .btn:hover { background: #f0f0f0; } .dev-panel .btn.primary { background: var(--primary-blue); color: white; border-color: var(--primary-blue); } .dev-panel .btn.danger { background: #fbecec; color: #dc2626; border-color: #f8d7da; } .dev-panel .btn[disabled] { opacity: .5; cursor: not-allowed; } .dev-panel label { font-size: 14px; margin-bottom: 4px; display: block; } .dev-panel select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;} .dev-panel .hidden { display: none; }
     .map-container { width: 100%; height: 100%; position: relative; flex-grow: 1; }
-    svg { width: 100%; height: 100%; background: transparent; touch-action: none; } /* Changed background */
-    .ui-overlay { position: absolute; z-index: 10; width: 100%; padding: 0 16px; pointer-events: none; } .ui-overlay > * { pointer-events: auto; } .top-bar { top: 20px; display: flex; align-items: center; gap: 12px; } .logo-container { flex-shrink: 0; }
+    svg { width: 100%; height: 100%; background: transparent; touch-action: none; }
+    .ui-overlay { position: absolute; z-index: 10; width: 100%; padding: 0 16px; pointer-events: none; } .ui-overlay > * { pointer-events: auto; }
+    .top-bar { top: 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+    .logo-container { grid-column: 1; justify-self: start; }
     .logo-container img { height: 44px; width: auto; display: block; }
-    .search-wrapper { flex-grow: 1; display: flex; justify-content: center; } .search-bar { width: 100%; max-width: 400px; background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; } .search-bar i { color: #888; margin-right: 12px; } .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
-    .side-controls { position: absolute; left: 16px; bottom: 120px; z-index: 10; display: flex; flex-direction: column; gap: 10px; } .dev-mode-btn { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; } body.dev-mode .side-controls { display: none; }
+    .search-wrapper { grid-column: 2; width: 100%; max-width: 400px; }
+    .search-bar { background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; margin: 0 auto;} .search-bar i { color: #888; margin-right: 12px; } .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
+    .created-by { grid-column: 3; justify-self: end; font-size: 15px; color: white; text-decoration: none; text-shadow: 0 0 8px rgba(255, 255, 255, 0.7); }
+    .side-controls { position: absolute; left: 16px; bottom: 120px; z-index: 10; display: flex; flex-direction: row; gap: 10px; } body.dev-mode .side-controls { display: none; }
+    .dev-mode-btn { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; font-size: 18px; }
     .bottom-bar { bottom: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px 20px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); } body.dev-mode .bottom-bar { display: none; } .category-filters { display: flex; justify-content: space-around; gap: 8px;} .category-item { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; flex-grow: 1; cursor: pointer; padding: 6px; border-radius: 8px;} .category-item.active, .category-item:hover { background-color: #f0f0f0; }
     .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;} .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;} .icon.walk { background-color: #e8e8e8; color: #333; } .icon.offices { background-color: #dcfce7; color: #16a34a; } .icon.training { background-color: #ffedd5; color: #9a3412; } .icon.services { background-color: #f3f4f6; color: #4b5563; }
-    #routeBg { stroke: #4d4d4d; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round;} #route { stroke: #ffffff; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 10; animation: dash 1s linear infinite; } @keyframes dash { to { stroke-dashoffset: -180; } }
+    #routeBg { stroke: #a09898; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round;} #route { stroke: #ffffff; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 10; animation: dash 3s linear infinite; } @keyframes dash { to { stroke-dashoffset: -180; } }
     #draft{stroke:#9aa9be;stroke-dasharray:6 6;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round} #arrow { filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); } #arrow .head { fill: var(--primary-blue); stroke: white; stroke-width: 1.5; } #arrow .tail { fill: var(--primary-blue); opacity: .95; }
     #pins text { fill: #000; font-size: 15px; font-weight: 600; paint-order: stroke; stroke: white; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+    @media (max-width: 700px) {
+      .top-bar { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      .logo-container { order: 1; }
+      .created-by { order: 2; font-size: 12px; }
+      .search-wrapper { order: 3; width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <!-- --- ADDED THIS SECTION --- -->
   <div class="bg-mesh"><canvas id="mesh"></canvas></div>
-
   <div class="app-container">
     <aside class="dev-panel" id="devPanel">
         <h3>Mode</h3><button class="btn" id="goUserMode">Switch to User Mode</button><div class="vsep"></div>
@@ -67,12 +66,20 @@
     </aside>
 
     <main class="map-container">
-      <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <svg id="svg" viewBox="0 0 100 100" xmlns="">
           <image id="bg" href="image.png" x="0" y="0" width="100" height="100" /><g id="pins"></g><path id="routeBg" d=""></path><path id="route" d=""></path><path id="draft" d=""></path>
-          <g id="arrow" transform="translate(-100,-100)"><path class="tail" d="M-10,-3 L-2,0 L-10,3 Z" /><path class="head" d="M0,-6 L16,0 L0,6 L3,0 Z" /></g>
+          <!-- Arrow head removed below -->
+          <g id="arrow" transform="translate(-5,-5)"><path class="tail" d="M-0,-0 L-0,0 L-0,0 Z" /></g>
       </svg>
-      <div class="ui-overlay top-bar"><div class="logo-container"><img src="logo.png" alt="Logo"></div><div class="search-wrapper"><div class="search-bar"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Search"></div></div></div>
-      <div class="side-controls"><div class="dev-mode-btn" id="goDevMode"><i class="fa-solid fa-code"></i><span>Developer Mode</span></div></div>
+      <div class="ui-overlay top-bar">
+        <div class="logo-container"><img src="logo.png" alt="Logo"></div>
+        <div class="search-wrapper"><div class="search-bar"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="searchInput" placeholder="Search"></div></div>
+        <a href="https://awaizahmed.com" target="_blank" class="created-by">Created by Awaiz Ahmed</a>
+      </div>
+      <div class="side-controls">
+        <div class="dev-mode-btn" id="goDevMode"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <div class="dev-mode-btn" id="rotateMap"><i class="fa-solid fa-rotate"></i></div>
+      </div>
       <div class="ui-overlay bottom-bar"><div class="category-filters" id="category-filters"><div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div><div class="category-item" data-category="offices"><span class="icon offices"><i class="fa-solid fa-building"></i></span><span>Offices</span></div><div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div><div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Services</span></div></div></div>
     </main>
   </div>
@@ -80,237 +87,185 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script>
-  /* --- ADDED THIS SCRIPT --- */
-  (function(){
-    const canvas = document.getElementById('mesh');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w=0,h=0,dpr=1, nodes=[], maxLinks=110, nodeCount=0;
-    const MAX_D = 140;
-    const DOT_R = 1.5;
-    const SPEED = 0.06;
-    let last=0, hueBase=210;
-
-    function resize(){
-      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      w = canvas.clientWidth;
-      h = canvas.clientHeight;
-      canvas.width = w*dpr;
-      canvas.height = h*dpr;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      nodeCount = Math.max(40, Math.min(120, Math.floor((w*h)/18000)));
-      spawnNodes();
-    }
-    function spawnNodes(){
-      nodes = new Array(nodeCount).fill(0).map(()=>({
-        x: Math.random()*w,
-        y: Math.random()*h,
-        vx:(Math.random()*2-1)*SPEED,
-        vy:(Math.random()*2-1)*SPEED
-      }));
-    }
-    function step(ts){
-      if(!last) last = ts;
-      const dt = ts - last; last = ts;
-      ctx.clearRect(0,0,w,h);
-      const hue = (hueBase + (ts/80))%360;
-      for(const n of nodes){
-        n.x += n.vx * dt;
-        n.y += n.vy * dt;
-        if(n.x<0||n.x>w) n.vx*=-1;
-        if(n.y<0||n.y>h) n.vy*=-1;
+    (function(){
+      const canvas = document.getElementById('mesh'); if(!canvas) return; const ctx = canvas.getContext('2d');
+      let w=0,h=0,dpr=1, nodes=[], maxLinks=110, nodeCount=0;
+      const MAX_D = 140, DOT_R = 1.5, SPEED = 0.06; let last=0, hueBase=210;
+      function resize(){
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); w = canvas.clientWidth; h = canvas.clientHeight; canvas.width = w*dpr; canvas.height = h*dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0); nodeCount = Math.max(40, Math.min(120, Math.floor((w*h)/18000))); spawnNodes();
       }
-      ctx.lineWidth = 1;
-      let links = 0;
-      for(let i=0;i<nodes.length;i++){
-        const a = nodes[i];
-        for(let j=i+1;j<nodes.length;j++){
-          const b = nodes[j];
-          const dx=a.x-b.x, dy=a.y-b.y;
-          const d = Math.hypot(dx,dy);
-          if(d<MAX_D){
-            const alpha = (1 - d/MAX_D) * 0.18;
-            ctx.strokeStyle = `hsla(${hue}, 30%, 75%, ${alpha})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x,a.y);
-            ctx.lineTo(b.x,b.y);
-            ctx.stroke();
-            if(++links>nodeCount*3 || links>maxLinks) break;
+      function spawnNodes(){ nodes = new Array(nodeCount).fill(0).map(()=>({ x: Math.random()*w, y: Math.random()*h, vx:(Math.random()*2-1)*SPEED, vy:(Math.random()*2-1)*SPEED })); }
+      function step(ts){
+        if(!last) last = ts; const dt = ts - last; last = ts; ctx.clearRect(0,0,w,h); const hue = (hueBase + (ts/80))%360;
+        for(const n of nodes){ n.x += n.vx * dt; n.y += n.vy * dt; if(n.x<0||n.x>w) n.vx*=-1; if(n.y<0||n.y>h) n.vy*=-1; }
+        ctx.lineWidth = 1; let links = 0;
+        for(let i=0;i<nodes.length;i++){
+          const a = nodes[i];
+          for(let j=i+1;j<nodes.length;j++){
+            const b = nodes[j], dx=a.x-b.x, dy=a.y-b.y, d = Math.hypot(dx,dy);
+            if(d<MAX_D){
+              const alpha = (1 - d/MAX_D) * 0.18; ctx.strokeStyle = `hsla(${hue}, 30%, 75%, ${alpha})`;
+              ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+              if(++links>nodeCount*3 || links>maxLinks) break;
+            }
           }
         }
+        ctx.fillStyle = 'rgba(255,255,255,0.15)'; for(const n of nodes){ ctx.beginPath(); ctx.arc(n.x, n.y, DOT_R, 0, Math.PI*2); ctx.fill(); }
+        requestAnimationFrame(step);
       }
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      for(const n of nodes){
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, DOT_R, 0, Math.PI*2);
-        ctx.fill();
-      }
-      requestAnimationFrame(step);
-    }
-    resize();
-    requestAnimationFrame(step);
-    window.addEventListener('resize', resize);
-  })();
+      resize(); requestAnimationFrame(step); window.addEventListener('resize', resize);
+    })();
 
-  /* --- ORIGINAL SCRIPT --- */
-  (function(){
-    const firebaseConfig = {
-      apiKey: "AIzaSyBtDzDtuoZ6iN-hcE22_iFJKd6rzor8Mc",
-      authDomain: "mobilemapitproject.firebaseapp.com",
-      projectId: "mobilemapitproject",
-      storageBucket: "mobilemapitproject.firebaseastorage.app",
-      messagingSenderId: "478246668451",
-      appId: "1:478246668451:web:0bc300699bbd7168dd9716"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const mapDocRef = db.collection("maps").doc("main-map-data");
+    (function(){
+      const firebaseConfig = {
+        apiKey: "AIzaSyBtDzDtuoZ6iN-hcE22_iFJKd6rzor8Mc", authDomain: "mobilemapitproject.firebaseapp.com", projectId: "mobilemapitproject",
+        storageBucket: "mobilemapitproject.firebaseastorage.app", messagingSenderId: "478246668451", appId: "1:478246668451:web:0bc300699bbd7168dd9716"
+      };
+      firebase.initializeApp(firebaseConfig); const db = firebase.firestore(); const mapDocRef = db.collection("maps").doc("main-map-data");
 
-    const $=q=>document.querySelector(q);
-    const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft');
-    const goDevMode=$('#goDevMode'), goUserMode=$('#goUserMode'), fromSel=$('#fromSel'), toSel=$('#toSel');
-    const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
-    const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
+      const $=q=>document.querySelector(q);
+      const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft'), searchInput=$('#searchInput');
+      const goDevMode=$('#goDevMode'), goUserMode=$('#goUserMode'), fromSel=$('#fromSel'), toSel=$('#toSel');
+      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
+      const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
+      const rotateMapBtn = $('#rotateMap');
 
-    let ROUTES={}, MARKERS={}, YOU_POS=null;
-    let mode='user', placing=null, drawing=false, points=[], anim=null, devUnlocked=false;
+      let ROUTES={}, MARKERS={}, YOU_POS=null;
+      let mode='user', placing=null, drawing=false, points=[], anim=null, devUnlocked=false, rotation = 0;
 
-    function loadData() {
-      mapDocRef.onSnapshot(doc => {
-        if (doc.exists) {
+      function loadData() {
+        mapDocRef.onSnapshot(doc => {
+          if (doc.exists) {
             const data = doc.data();
             ROUTES = data.routes || {}; MARKERS = data.markers || {}; YOU_POS = data.you || null;
-            renderPins(document.querySelector('.category-item.active')?.dataset.category || 'all');
-            fillSelects();
-        }
-        if (!svg.getAttribute('viewBox')) fitToImage();
-      }, error => console.error("Error listening to map data:", error));
-    }
-
-    function saveDataToFirebase() {
-        if (mode !== 'dev' || !devUnlocked) return;
-        mapDocRef.set({ markers: MARKERS, routes: ROUTES, you: YOU_POS }, { merge: true })
-        .then(() => console.log("Map data saved to Firebase!"))
-        .catch(error => console.error("Error saving to Firebase:", error));
-    }
-
-    function setMode(newMode) {
-      if (newMode === 'dev' && !devUnlocked) {
-          const u=prompt('Username:'), p=prompt('Password:');
-          if (u==='awaiz' && p==='1234') devUnlocked = true;
-          else { alert('Access denied.'); return; }
+            renderPins(document.querySelector('.category-item.active')?.dataset.category || 'all'); fillSelects();
+          }
+          if (!svg.getAttribute('viewBox')) fitToImage();
+        }, error => console.error("Error listening to map data:", error));
       }
-      mode = newMode;
-      document.body.classList.toggle('dev-mode', mode === 'dev');
-      clearRoute(); renderPins();
-    }
-    
-    function fitToImage(){
-      const img=new Image();
-      img.onload=()=>{ const W=img.naturalWidth||768, H=img.naturalHeight||1344; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); bg.setAttribute('width',W); bg.setAttribute('height',H); };
-      img.src=bg.getAttribute('href');
-    }
-    fitToImage();
 
-    const keyFor = (f, t) => f + '→' + t;
-    function drawPathD(list) { if (!list || !list.length) return ''; const a = list[0]; return 'M ' + a.x + ' ' + a.y + ' L ' + list.map(p => p.x + ' ' + p.y).join(' '); }
-    function clearRoute() { route.setAttribute('d', ''); routeBg.setAttribute('d', ''); draft.setAttribute('d', ''); if (anim) cancelAnimationFrame(anim); arrow.setAttribute('transform', 'translate(-100,-100)'); }
-    const ns = tag => document.createElementNS('http://www.w3.org/2000/svg', tag);
-    
-    function renderPins(filterCategory = 'all') {
-        if (!MARKERS) return;
-        pinsLayer.innerHTML = '';
-        for (const [name, p] of Object.entries(MARKERS)) {
-            const categoryOfMarker = p.category || 'general';
-            if (mode === 'user' && filterCategory !== 'all' && categoryOfMarker !== filterCategory) continue;
-            const g = ns('g');
-            g.setAttribute('transform', `translate(${p.x},${p.y})`);
-            g.style.cursor = 'pointer';
-            const c = ns('circle');
-            
-            c.setAttribute('r', 8);
+      function saveDataToFirebase() {
+        if (mode !== 'dev' || !devUnlocked) return;
+        mapDocRef.set({ markers: MARKERS, routes: ROUTES, you: YOU_POS }, { merge: true }).catch(error => console.error("Error saving to Firebase:", error));
+      }
 
-            c.style.fill = (mode === 'dev' ? '#7c3aed' : '#ef4444');
-            c.style.stroke = 'white'; c.style.strokeWidth = '2';
-            const t = ns('text');
-            t.setAttribute('x', 0);
-            
-            t.setAttribute('y', 24);
-            
-            t.textContent = name;
-            t.setAttribute('text-anchor', 'middle');
-            g.append(c, t);
-            g.addEventListener('click', () => { if (mode === 'user') navigateTo(name); });
-            pinsLayer.appendChild(g);
+      function setMode(newMode) {
+        if (newMode === 'dev' && !devUnlocked) {
+            const u=prompt('Username:'), p=prompt('Password:');
+            if (u==='awaiz' && p==='1234') devUnlocked = true; else { alert('Access denied.'); return; }
         }
-        if (YOU_POS) {
-            const g = ns('g');
-            g.setAttribute('transform', `translate(${YOU_POS.x},${YOU_POS.y})`);
-            const c = ns('circle');
-            
-            c.setAttribute('r', 7);
+        mode = newMode; document.body.classList.toggle('dev-mode', mode === 'dev'); clearRoute(); renderPins();
+      }
+      
+      function fitToImage(){
+        const img=new Image();
+        img.onload=()=>{ const W=img.naturalWidth||768, H=img.naturalHeight||1344; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); bg.setAttribute('width',W); bg.setAttribute('height',H); renderPins(); };
+        img.src=bg.getAttribute('href');
+      }
+      fitToImage();
 
-            c.style.fill = '#007aff'; c.style.stroke = 'white'; c.style.strokeWidth = '3';
-            const t = ns('text');
-            t.setAttribute('x', 0);
-            
-            t.setAttribute('y', -16);
-            
-            t.textContent = 'You are here';
-            t.setAttribute('text-anchor', 'middle');
-            t.style.fontSize = '16px';
-            g.append(c, t);
-            pinsLayer.appendChild(g);
-        }
-    }
-    
-    function showRoute(fromKey, toKey) { clearRoute(); if (!fromKey || !toKey || !ROUTES) return; const arr = ROUTES[keyFor(fromKey, toKey)]; if (!arr || !arr.length) return; const d = drawPathD(arr); route.setAttribute('d', d); routeBg.setAttribute('d', d); animateAlong(route); }
-    function animateAlong(path) { const L = path.getTotalLength(); if (L === 0) return; let t0 = null; const dur = Math.max(2000, L * 5); function step(ts) { if (!t0) t0 = ts; const dlen = ((ts - t0) % dur) / dur * L; const pos = path.getPointAtLength(dlen); const ahead = path.getPointAtLength(Math.min(dlen + 5, L)); const ang = Math.atan2(ahead.y - pos.y, ahead.x - pos.x) * 180 / Math.PI; arrow.setAttribute('transform', `translate(${pos.x},${pos.y}) rotate(${ang})`); anim = requestAnimationFrame(step); } if (anim) cancelAnimationFrame(anim); anim = requestAnimationFrame(step); }
-    const navigateTo = name => { if (!YOU_POS) return; showRoute('YOU', name); };
-    const addOpt = (el, val, txt) => { const o = document.createElement('option'); o.value = val; o.textContent = txt; el.appendChild(o); };
-    function fillSelects() { if (!fromSel || !toSel) return; fromSel.innerHTML = ''; toSel.innerHTML = ''; addOpt(fromSel, 'YOU', 'You are here'); Object.keys(MARKERS).sort().forEach(n => { addOpt(fromSel, n, n); addOpt(toSel, n, n); }); }
+      const keyFor = (f, t) => f + '→' + t;
+      function drawPathD(list) { if (!list || !list.length) return ''; const a = list[0]; return 'M ' + a.x + ' ' + a.y + ' L ' + list.map(p => p.x + ' ' + p.y).join(' '); }
+      function clearRoute() { route.setAttribute('d', ''); routeBg.setAttribute('d', ''); draft.setAttribute('d', ''); if (anim) cancelAnimationFrame(anim); arrow.setAttribute('transform', 'translate(-100,-100)'); }
+      const ns = tag => document.createElementNS('http://www.w3.org/2000/svg', tag);
+      
+      function renderPins(filterCategory = 'all') {
+          if (!MARKERS || !bg.getAttribute('width')) return;
+          pinsLayer.innerHTML = ''; const W = parseInt(bg.getAttribute('width')), H = parseInt(bg.getAttribute('height'));
+          const transform = `rotate(${rotation} ${W/2} ${H/2})`;
+          
+          Object.entries(MARKERS).forEach(([name, p]) => {
+              const categoryOfMarker = p.category || 'general';
+              if (mode === 'user' && filterCategory !== 'all' && categoryOfMarker !== filterCategory) return;
+              const g = ns('g'); g.setAttribute('transform', `translate(${p.x},${p.y})`); g.style.cursor = 'pointer';
+              const c = ns('circle'); c.setAttribute('r', 8); c.style.fill = (mode === 'dev' ? '#7c3aed' : '#ef4444'); c.style.stroke = 'white'; c.style.strokeWidth = '2';
+              const t = ns('text'); t.setAttribute('x', 0); t.setAttribute('y', 24); t.textContent = name; t.setAttribute('text-anchor', 'middle');
+              g.append(c, t); g.addEventListener('click', () => { if (mode === 'user') navigateTo(name); });
+              pinsLayer.appendChild(g);
+          });
+          if (YOU_POS) {
+              const g = ns('g'); g.setAttribute('transform', `translate(${YOU_POS.x},${YOU_POS.y})`);
+              const c = ns('circle'); c.setAttribute('r', 7); c.style.fill = '#007aff'; c.style.stroke = 'white'; c.style.strokeWidth = '3';
+              const t = ns('text'); t.setAttribute('x', 0); t.setAttribute('y', -16); t.textContent = 'You are here'; t.setAttribute('text-anchor', 'middle'); t.style.fontSize = '16px';
+              g.append(c, t); pinsLayer.appendChild(g);
+          }
+          [bg, pinsLayer, route, routeBg, draft].forEach(el => el.setAttribute('transform', transform));
+      }
+      
+      function showRoute(fromKey, toKey) { clearRoute(); if (!fromKey || !toKey || !ROUTES) return; const arr = ROUTES[keyFor(fromKey, toKey)]; if (!arr || !arr.length) return; const d = drawPathD(arr); route.setAttribute('d', d); routeBg.setAttribute('d', d); animateAlong(route); }
+      
+      function animateAlong(path) {
+          const L = path.getTotalLength(); if (L === 0) return; let t0 = null; const dur = Math.max(2000, L * 5);
+          function step(ts) {
+              if (anim === null) return; // Stop animation if it was cancelled
+              if (!t0) t0 = ts; const dlen = ((ts - t0) % dur) / dur * L;
+              
+              const current_pos = path.getPointAtLength(dlen);
+              const ahead_pos = path.getPointAtLength(Math.min(dlen + 5, L));
+              const matrix = path.getScreenCTM();
+              
+              const p1 = svg.createSVGPoint(); p1.x = current_pos.x; p1.y = current_pos.y;
+              const p2 = svg.createSVGPoint(); p2.x = ahead_pos.x; p2.y = ahead_pos.y;
+              
+              const final_p1 = p1.matrixTransform(matrix);
+              const final_p2 = p2.matrixTransform(matrix);
+              
+              const angle = Math.atan2(final_p2.y - final_p1.y, final_p2.x - final_p1.x) * 180 / Math.PI;
 
-    goDevMode.addEventListener('click', () => setMode('dev'));
-    goUserMode.addEventListener('click', () => setMode('user'));
-    addPointBtn.addEventListener('click', () => { placing = 'point'; console.log('Click map to add point.'); });
-    setHereBtn.addEventListener('click', () => { placing = 'here'; console.log('Click map to set start.'); });
-    btnDraw.addEventListener('click', () => { if (!toSel.value) return alert('Choose a destination.'); drawing = true; points = []; btnUndo.disabled = false; btnSave.disabled = false; draft.setAttribute('d', ''); });
-    btnUndo.addEventListener('click', () => { if (!drawing || !points.length) return; points.pop(); draft.setAttribute('d', drawPathD(points)); });
-    btnSave.addEventListener('click', () => { if (!drawing || !points.length) return; const from = fromSel.value || 'YOU', to = toSel.value; ROUTES[keyFor(from, to)] = points.slice(); saveDataToFirebase(); drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; showRoute(from, to); });
-    btnDelete.addEventListener('click', () => { const from = fromSel.value || 'YOU', to = toSel.value; if (!to) return alert('Select a route to delete.'); const k = keyFor(from, to); if (ROUTES[k] && confirm(`Delete route: ${from} to ${to}?`)) { delete ROUTES[k]; saveDataToFirebase(); clearRoute(); } });
-    btnExport.addEventListener('click', () => { const dataStr = JSON.stringify({ markers: MARKERS, you: YOU_POS, routes: ROUTES }, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'wayfinding-data.json'; a.click(); URL.revokeObjectURL(url); });
-    importFile.addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(text => { const data = JSON.parse(text); MARKERS = data.markers || {}; YOU_POS = data.you || null; ROUTES = data.routes || {}; saveDataToFirebase(); }).catch(err => alert('Invalid JSON.')); importFile.value = ''; });
-    
-    const svgPoint = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
-    svg.addEventListener('click', e => {
-        if (mode !== 'dev') return;
-        const p = svgPoint(e);
-        if (placing) {
-            if (placing === 'point') {
-                const name = prompt('Location name:');
-                if (name && name.trim()) {
-                    const category = prompt('Enter category for "' + name + '":\n(e.g., offices, training, services, work)');
-                    MARKERS[name.trim()] = { x: Math.round(p.x), y: Math.round(p.y), category: category ? category.trim().toLowerCase() : 'general' };
-                    saveDataToFirebase();
-                }
-            } else if (placing === 'here') {
-                YOU_POS = { x: Math.round(p.x), y: Math.round(p.y) };
-                saveDataToFirebase();
-            }
-            placing = null;
-        } else if (drawing) {
-            points.push({ x: Math.round(p.x), y: Math.round(p.y) });
-            draft.setAttribute('d', drawPathD(points));
-        }
-    });
+              arrow.setAttribute('transform', `translate(${final_p1.x},${final_p1.y}) rotate(${angle})`);
+              anim = requestAnimationFrame(step);
+          }
+          if (anim) cancelAnimationFrame(anim);
+          anim = requestAnimationFrame(step);
+      }
+      
+      const navigateTo = name => { if (!YOU_POS) return; showRoute('YOU', name); searchInput.value = name; };
+      const addOpt = (el, val, txt) => { const o = document.createElement('option'); o.value = val; o.textContent = txt; el.appendChild(o); };
+      function fillSelects() { if (!fromSel || !toSel) return; fromSel.innerHTML = ''; toSel.innerHTML = ''; addOpt(fromSel, 'YOU', 'You are here'); Object.keys(MARKERS).sort().forEach(n => { addOpt(fromSel, n, n); addOpt(toSel, n, n); }); }
 
-    window.addEventListener('keydown', e => { if (drawing && e.key === 'Enter') btnSave.click(); if (drawing && e.key === 'Escape') { drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; } });
-    $('#category-filters').addEventListener('click', e => { const item = e.target.closest('.category-item'); if (!item) return; $('#category-filters .active').classList.remove('active'); item.classList.add('active'); clearRoute(); renderPins(item.dataset.category); });
-    
-    const panzoomScript = document.createElement('script'); panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js'; panzoomScript.onload = () => { Panzoom(svg, { maxScale: 5, minScale: 0.7 }); }; document.body.appendChild(panzoomScript);
-    
-    loadData();
-  })();
+      goDevMode.addEventListener('click', () => setMode('dev')); goUserMode.addEventListener('click', () => setMode('user'));
+      addPointBtn.addEventListener('click', () => { placing = 'point'; }); setHereBtn.addEventListener('click', () => { placing = 'here'; });
+      btnDraw.addEventListener('click', () => { if (!toSel.value) return alert('Choose a destination.'); drawing = true; points = []; btnUndo.disabled = false; btnSave.disabled = false; draft.setAttribute('d', ''); });
+      btnUndo.addEventListener('click', () => { if (!drawing || !points.length) return; points.pop(); draft.setAttribute('d', drawPathD(points)); });
+      btnSave.addEventListener('click', () => { if (!drawing || !points.length) return; const from = fromSel.value || 'YOU', to = toSel.value; ROUTES[keyFor(from, to)] = points.slice(); saveDataToFirebase(); drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; showRoute(from, to); });
+      btnDelete.addEventListener('click', () => { const from = fromSel.value || 'YOU', to = toSel.value; if (!to) return alert('Select a route to delete.'); const k = keyFor(from, to); if (ROUTES[k] && confirm(`Delete route: ${from} to ${to}?`)) { delete ROUTES[k]; saveDataToFirebase(); clearRoute(); } });
+      btnExport.addEventListener('click', () => { const dataStr = JSON.stringify({ markers: MARKERS, you: YOU_POS, routes: ROUTES }, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'wayfinding-data.json'; a.click(); URL.revokeObjectURL(url); });
+      importFile.addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(text => { const data = JSON.parse(text); MARKERS = data.markers || {}; YOU_POS = data.you || null; ROUTES = data.routes || {}; saveDataToFirebase(); renderPins(); }).catch(err => alert('Invalid JSON.')); importFile.value = ''; });
+      
+      const svgPoint = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+      svg.addEventListener('click', e => {
+          if (mode !== 'dev') return; const p = svgPoint(e);
+          if (placing) {
+              if (placing === 'point') {
+                  const name = prompt('Location name:');
+                  if (name && name.trim()) {
+                      const cat = prompt('Category: (offices, training, services)', 'general');
+                      MARKERS[name.trim()] = { x: Math.round(p.x), y: Math.round(p.y), category: cat ? cat.trim().toLowerCase() : 'general' };
+                      saveDataToFirebase();
+                  }
+              } else if (placing === 'here') { YOU_POS = { x: Math.round(p.x), y: Math.round(p.y) }; saveDataToFirebase(); }
+              placing = null;
+          } else if (drawing) { points.push({ x: Math.round(p.x), y: Math.round(p.y) }); draft.setAttribute('d', drawPathD(points)); }
+      });
+      window.addEventListener('keydown', e => { if (drawing && e.key === 'Enter') btnSave.click(); if (drawing && e.key === 'Escape') { drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; } });
+      $('#category-filters').addEventListener('click', e => { const item = e.target.closest('.category-item'); if (!item) return; $('#category-filters .active').classList.remove('active'); item.classList.add('active'); clearRoute(); renderPins(item.dataset.category); });
+      rotateMapBtn.addEventListener('click', () => { rotation = (rotation + 90) % 360; renderPins(); const currentRoute = route.getAttribute('d'); if(currentRoute) { animateAlong(route) } });
+      
+      // SEARCH BAR FUNCTIONALITY
+      searchInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+              const query = searchInput.value.trim().toLowerCase();
+              if (!query) { clearRoute(); return; }
+              const matchedKey = Object.keys(MARKERS).find(key => key.trim().toLowerCase() === query);
+              if (matchedKey) { navigateTo(matchedKey); } else { alert('Location not found.'); }
+          }
+      });
+      searchInput.addEventListener('input', () => { if (searchInput.value.trim() === '') clearRoute(); });
+      
+      const panzoomScript = document.createElement('script'); panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js'; panzoomScript.onload = () => { Panzoom(svg, { maxScale: 8, minScale: 0.7, contain: 'outside' }); }; document.body.appendChild(panzoomScript);
+      loadData();
+    })();
   </script>
 </body>
-</html>```
+</html>
