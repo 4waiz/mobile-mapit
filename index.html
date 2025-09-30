@@ -6,15 +6,41 @@
   <title>Wayfinding Map</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    /* CSS is identical to the previous version and requires no changes */
-    :root { --panel: #ffffff; --border: #e0e0e0; --ink: #333333; --primary-blue: #007aff; --dev-panel-bg: #f8f9fa; }
-    * { box-sizing: border-box; } html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .app-container { display: flex; width: 100%; height: 100%; position: relative; }
+    /* --- MODIFIED CSS --- */
+    :root {
+      --panel: #ffffff; --border: #e0e0e0; --ink: #333333; --primary-blue: #007aff; --dev-panel-bg: #f8f9fa;
+      /* ==== Animated Nebula Gradient Colors ==== */
+      --nebula-start: #1c1d24;
+      --nebula-mid-orange: #dfd7d2;
+      --nebula-mid-grey: #a7aab1;
+      --nebula-end: #e8e9f3;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: conic-gradient(at 0% 50%,
+        var(--nebula-start) 0%,
+        var(--nebula-mid-orange) 20%,
+        var(--nebula-start) 35%,
+        var(--nebula-mid-grey) 65%,
+        var(--nebula-start) 80%,
+        var(--nebula-end) 100%);
+      background-size: 200% 200%;
+      animation: panBackground 60s linear infinite alternate;
+    }
+    @keyframes panBackground {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 100% 100%; }
+    }
+    .bg-mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    #mesh { display: block; width: 100%; height: 100%; }
+    .app-container { display: flex; width: 100%; height: 100%; position: relative; z-index: 1; }
     .dev-panel { width: 280px; background: var(--dev-panel-bg); border-right: 1px solid var(--border); padding: 12px; display: none; flex-direction: column; gap: 12px; overflow-y: auto; color: #333; }
     body.dev-mode .dev-panel { display: flex; } .dev-panel h3 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; color: #666;} .dev-panel .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;} .dev-panel .vsep { height: 1px; background: var(--border); margin: 8px 0; } .dev-panel .btn { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; width: 100%; }
     .dev-panel .btn:hover { background: #f0f0f0; } .dev-panel .btn.primary { background: var(--primary-blue); color: white; border-color: var(--primary-blue); } .dev-panel .btn.danger { background: #fbecec; color: #dc2626; border-color: #f8d7da; } .dev-panel .btn[disabled] { opacity: .5; cursor: not-allowed; } .dev-panel label { font-size: 14px; margin-bottom: 4px; display: block; } .dev-panel select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;} .dev-panel .hidden { display: none; }
     .map-container { width: 100%; height: 100%; position: relative; flex-grow: 1; }
-    svg { width: 100%; height: 100%; background: #f4f4f4; touch-action: none; }
+    svg { width: 100%; height: 100%; background: transparent; touch-action: none; } /* Changed background */
     .ui-overlay { position: absolute; z-index: 10; width: 100%; padding: 0 16px; pointer-events: none; } .ui-overlay > * { pointer-events: auto; } .top-bar { top: 20px; display: flex; align-items: center; gap: 12px; } .logo-container { flex-shrink: 0; }
     .logo-container img { height: 44px; width: auto; display: block; }
     .search-wrapper { flex-grow: 1; display: flex; justify-content: center; } .search-bar { width: 100%; max-width: 400px; background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; } .search-bar i { color: #888; margin-right: 12px; } .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
@@ -27,6 +53,9 @@
   </style>
 </head>
 <body>
+  <!-- --- ADDED THIS SECTION --- -->
+  <div class="bg-mesh"><canvas id="mesh"></canvas></div>
+
   <div class="app-container">
     <aside class="dev-panel" id="devPanel">
         <h3>Mode</h3><button class="btn" id="goUserMode">Switch to User Mode</button><div class="vsep"></div>
@@ -51,6 +80,79 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script>
+  /* --- ADDED THIS SCRIPT --- */
+  (function(){
+    const canvas = document.getElementById('mesh');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w=0,h=0,dpr=1, nodes=[], maxLinks=110, nodeCount=0;
+    const MAX_D = 140;
+    const DOT_R = 1.5;
+    const SPEED = 0.06;
+    let last=0, hueBase=210;
+
+    function resize(){
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      canvas.width = w*dpr;
+      canvas.height = h*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      nodeCount = Math.max(40, Math.min(120, Math.floor((w*h)/18000)));
+      spawnNodes();
+    }
+    function spawnNodes(){
+      nodes = new Array(nodeCount).fill(0).map(()=>({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        vx:(Math.random()*2-1)*SPEED,
+        vy:(Math.random()*2-1)*SPEED
+      }));
+    }
+    function step(ts){
+      if(!last) last = ts;
+      const dt = ts - last; last = ts;
+      ctx.clearRect(0,0,w,h);
+      const hue = (hueBase + (ts/80))%360;
+      for(const n of nodes){
+        n.x += n.vx * dt;
+        n.y += n.vy * dt;
+        if(n.x<0||n.x>w) n.vx*=-1;
+        if(n.y<0||n.y>h) n.vy*=-1;
+      }
+      ctx.lineWidth = 1;
+      let links = 0;
+      for(let i=0;i<nodes.length;i++){
+        const a = nodes[i];
+        for(let j=i+1;j<nodes.length;j++){
+          const b = nodes[j];
+          const dx=a.x-b.x, dy=a.y-b.y;
+          const d = Math.hypot(dx,dy);
+          if(d<MAX_D){
+            const alpha = (1 - d/MAX_D) * 0.18;
+            ctx.strokeStyle = `hsla(${hue}, 30%, 75%, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+            if(++links>nodeCount*3 || links>maxLinks) break;
+          }
+        }
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      for(const n of nodes){
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, DOT_R, 0, Math.PI*2);
+        ctx.fill();
+      }
+      requestAnimationFrame(step);
+    }
+    resize();
+    requestAnimationFrame(step);
+    window.addEventListener('resize', resize);
+  })();
+
+  /* --- ORIGINAL SCRIPT --- */
   (function(){
     const firebaseConfig = {
       apiKey: "AIzaSyBtDzDtuoZ6iN-hcE22_iFJKd6rzor8Mc",
@@ -126,16 +228,14 @@
             g.style.cursor = 'pointer';
             const c = ns('circle');
             
-            // --- CHANGE HERE ---
-            c.setAttribute('r', 8); // Reduced radius from 11 to 8
+            c.setAttribute('r', 8);
 
             c.style.fill = (mode === 'dev' ? '#7c3aed' : '#ef4444');
             c.style.stroke = 'white'; c.style.strokeWidth = '2';
             const t = ns('text');
             t.setAttribute('x', 0);
             
-            // --- AND CHANGE HERE ---
-            t.setAttribute('y', 24); // Adjusted text position from 28 to 24
+            t.setAttribute('y', 24);
             
             t.textContent = name;
             t.setAttribute('text-anchor', 'middle');
@@ -148,15 +248,13 @@
             g.setAttribute('transform', `translate(${YOU_POS.x},${YOU_POS.y})`);
             const c = ns('circle');
             
-            // --- AND CHANGE HERE ---
-            c.setAttribute('r', 7); // Reduced "You are here" radius from 9 to 7
+            c.setAttribute('r', 7);
 
             c.style.fill = '#007aff'; c.style.stroke = 'white'; c.style.strokeWidth = '3';
             const t = ns('text');
             t.setAttribute('x', 0);
             
-            // --- AND CHANGE HERE ---
-            t.setAttribute('y', -16); // Adjusted text position from -18 to -16
+            t.setAttribute('y', -16);
             
             t.textContent = 'You are here';
             t.setAttribute('text-anchor', 'middle');
