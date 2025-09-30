@@ -46,7 +46,7 @@
     .search-wrapper { flex-grow: 1; display: flex; justify-content: center; } .search-bar { width: 100%; max-width: 400px; background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; } .search-bar i { color: #888; margin-right: 12px; } .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
     .side-controls { position: absolute; left: 16px; bottom: 120px; z-index: 10; display: flex; flex-direction: column; gap: 10px; } .dev-mode-btn { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; } body.dev-mode .side-controls { display: none; }
     .bottom-bar { bottom: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px 20px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); } body.dev-mode .bottom-bar { display: none; } .category-filters { display: flex; justify-content: space-around; gap: 8px;} .category-item { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; flex-grow: 1; cursor: pointer; padding: 6px; border-radius: 8px;} .category-item.active, .category-item:hover { background-color: #f0f0f0; }
-    .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;} .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;} .icon.walk { background-color: #e8e8e8; color: #333; } .icon.facility { background-color: #e0f2fe; color: #0ea5e9; } .icon.training { background-color: #ffedd5; color: #9a3412; } .icon.services { background-color: #f3f4f6; color: #4b5563; }
+    .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;} .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;} .icon.walk { background-color: #e8e8e8; color: #333; } .icon.offices { background-color: #dcfce7; color: #16a34a; } .icon.training { background-color: #ffedd5; color: #9a3412; } .icon.services { background-color: #f3f4f6; color: #4b5563; }
     #routeBg { stroke: #4d4d4d; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round;} #route { stroke: #ffffff; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 10; animation: dash 1s linear infinite; } @keyframes dash { to { stroke-dashoffset: -180; } }
     #draft{stroke:#9aa9be;stroke-dasharray:6 6;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round} #arrow { filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); } #arrow .head { fill: var(--primary-blue); stroke: white; stroke-width: 1.5; } #arrow .tail { fill: var(--primary-blue); opacity: .95; }
     #pins text { fill: #000; font-size: 15px; font-weight: 600; paint-order: stroke; stroke: white; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
@@ -73,7 +73,7 @@
       </svg>
       <div class="ui-overlay top-bar"><div class="logo-container"><img src="logo.png" alt="Logo"></div><div class="search-wrapper"><div class="search-bar"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Search"></div></div></div>
       <div class="side-controls"><div class="dev-mode-btn" id="goDevMode"><i class="fa-solid fa-code"></i><span>Developer Mode</span></div></div>
-      <div classs="ui-overlay bottom-bar"><div class="category-filters" id="category-filters"><div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div><div class="category-item" data-category="facility"><span class="icon facility"><i class="fa-solid fa-toilet"></i></span><span>Toilets</span></div><div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div><div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Offices</span></div></div></div>
+      <div class="ui-overlay bottom-bar"><div class="category-filters" id="category-filters"><div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div><div class="category-item" data-category="offices"><span class="icon offices"><i class="fa-solid fa-building"></i></span><span>Offices</span></div><div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div><div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Services</span></div></div></div>
     </main>
   </div>
 
@@ -289,7 +289,7 @@
             if (placing === 'point') {
                 const name = prompt('Location name:');
                 if (name && name.trim()) {
-                    const category = prompt('Enter category for "' + name + '":\n(e.g., facility, training, services, work)');
+                    const category = prompt('Enter category for "' + name + '":\n(e.g., offices, training, services, work)');
                     MARKERS[name.trim()] = { x: Math.round(p.x), y: Math.round(p.y), category: category ? category.trim().toLowerCase() : 'general' };
                     saveDataToFirebase();
                 }
@@ -313,4 +313,4 @@
   })();
   </script>
 </body>
-</html>
+</html>```
