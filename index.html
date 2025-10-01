@@ -46,7 +46,7 @@
     #draft{stroke:#9aa9be;stroke-dasharray:6 6;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round} #arrow { filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); } #arrow .head { fill: var(--primary-blue); stroke: white; stroke-width: 1.5; } #arrow .tail { fill: var(--primary-blue); opacity: .95; }
     #pins text { fill: #000; font-size: 15px; font-weight: 600; paint-order: stroke; stroke: white; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
     @media (max-width: 700px) {
-      .top-bar { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      .top-bar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
       .logo-container { order: 1; }
       .created-by { order: 2; font-size: 12px; }
       .search-wrapper { order: 3; width: 100%; }
