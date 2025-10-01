@@ -66,7 +66,7 @@
     </aside>
 
     <main class="map-container">
-      <svg id="svg" viewBox="0 0 100 100" xmlns="">
+      <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <image id="bg" href="image.png" x="0" y="0" width="100" height="100" /><g id="pins"></g><path id="routeBg" d=""></path><path id="route" d=""></path><path id="draft" d=""></path>
           <!-- Arrow head removed below -->
           <g id="arrow" transform="translate(-5,-5)"><path class="tail" d="M-0,-0 L-0,0 L-0,0 Z" /></g>
@@ -127,7 +127,7 @@
       const $=q=>document.querySelector(q);
       const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft'), searchInput=$('#searchInput');
       const goDevMode=$('#goDevMode'), goUserMode=$('#goUserMode'), fromSel=$('#fromSel'), toSel=$('#toSel');
-      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
+      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$$('#btnUndo');
       const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
       const rotateMapBtn = $('#rotateMap');
 
@@ -139,9 +139,9 @@
           if (doc.exists) {
             const data = doc.data();
             ROUTES = data.routes || {}; MARKERS = data.markers || {}; YOU_POS = data.you || null;
-            renderPins(document.querySelector('.category-item.active')?.dataset.category || 'all'); fillSelects();
+            renderPins(document.querySelector('.category-item.active')?.dataset.category || 'all');
+            fillSelects();
           }
-          if (!svg.getAttribute('viewBox')) fitToImage();
         }, error => console.error("Error listening to map data:", error));
       }
 
@@ -167,11 +167,25 @@
             bg.setAttribute('height',H);
             renderPins();
             
-            // Now that the SVG is properly sized, initialize panzoom.
             const panzoomScript = document.createElement('script');
             panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
             panzoomScript.onload = () => {
-                Panzoom(svg, { maxScale: 8, minScale: 0.7, contain: 'outside' });
+                const container = svg.parentElement;
+                if (!container) return;
+
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                
+                const scaleX = containerWidth / W;
+                const scaleY = containerHeight / H;
+                const startScale = Math.min(scaleX, scaleY);
+
+                Panzoom(svg, {
+                    maxScale: 10,
+                    minScale: startScale, // Ensure user can't zoom out smaller than the fit-to-screen size
+                    contain: 'inside',   // Keep the map within the container bounds
+                    startScale: startScale, // Start zoomed to fit the whole map
+                });
             };
             document.body.appendChild(panzoomScript);
         };
@@ -211,7 +225,7 @@
       function animateAlong(path) {
           const L = path.getTotalLength(); if (L === 0) return; let t0 = null; const dur = Math.max(2000, L * 5);
           function step(ts) {
-              if (anim === null) return; // Stop animation if it was cancelled
+              if (anim === null) return;
               if (!t0) t0 = ts; const dlen = ((ts - t0) % dur) / dur * L;
               
               const current_pos = path.getPointAtLength(dlen);
@@ -265,7 +279,6 @@
       $('#category-filters').addEventListener('click', e => { const item = e.target.closest('.category-item'); if (!item) return; $('#category-filters .active').classList.remove('active'); item.classList.add('active'); clearRoute(); renderPins(item.dataset.category); });
       rotateMapBtn.addEventListener('click', () => { rotation = (rotation + 90) % 360; renderPins(); const currentRoute = route.getAttribute('d'); if(currentRoute) { animateAlong(route) } });
       
-      // SEARCH BAR FUNCTIONALITY
       searchInput.addEventListener('keydown', e => {
           if (e.key === 'Enter') {
               const query = searchInput.value.trim().toLowerCase();
