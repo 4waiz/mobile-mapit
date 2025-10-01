@@ -127,7 +127,7 @@
       const $=q=>document.querySelector(q);
       const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft'), searchInput=$('#searchInput');
       const goDevMode=$('#goDevMode'), goUserMode=$('#goUserMode'), fromSel=$('#fromSel'), toSel=$('#toSel');
-      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$$('#btnUndo');
+      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
       const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
       const rotateMapBtn = $('#rotateMap');
 
@@ -182,9 +182,9 @@
 
                 Panzoom(svg, {
                     maxScale: 10,
-                    minScale: startScale, // Ensure user can't zoom out smaller than the fit-to-screen size
-                    contain: 'inside',   // Keep the map within the container bounds
-                    startScale: startScale, // Start zoomed to fit the whole map
+                    minScale: startScale, 
+                    contain: 'inside',   
+                    startScale: startScale, 
                 });
             };
             document.body.appendChild(panzoomScript);
