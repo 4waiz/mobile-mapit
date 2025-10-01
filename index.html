@@ -160,10 +160,23 @@
       
       function fitToImage(){
         const img=new Image();
-        img.onload=()=>{ const W=img.naturalWidth||768, H=img.naturalHeight||1344; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); bg.setAttribute('width',W); bg.setAttribute('height',H); renderPins(); };
+        img.onload=()=>{
+            const W=img.naturalWidth||768, H=img.naturalHeight||1344;
+            svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+            bg.setAttribute('width',W);
+            bg.setAttribute('height',H);
+            renderPins();
+            
+            // Now that the SVG is properly sized, initialize panzoom.
+            const panzoomScript = document.createElement('script');
+            panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+            panzoomScript.onload = () => {
+                Panzoom(svg, { maxScale: 8, minScale: 0.7, contain: 'outside' });
+            };
+            document.body.appendChild(panzoomScript);
+        };
         img.src=bg.getAttribute('href');
       }
-      fitToImage();
 
       const keyFor = (f, t) => f + '→' + t;
       function drawPathD(list) { if (!list || !list.length) return ''; const a = list[0]; return 'M ' + a.x + ' ' + a.y + ' L ' + list.map(p => p.x + ' ' + p.y).join(' '); }
@@ -263,7 +276,7 @@
       });
       searchInput.addEventListener('input', () => { if (searchInput.value.trim() === '') clearRoute(); });
       
-      const panzoomScript = document.createElement('script'); panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js'; panzoomScript.onload = () => { Panzoom(svg, { maxScale: 8, minScale: 0.7, contain: 'outside' }); }; document.body.appendChild(panzoomScript);
+      fitToImage();
       loadData();
     })();
   </script>
