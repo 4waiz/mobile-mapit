@@ -1,240 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>EDGE — Wayfinding</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <style>
-    :root{
-      --bg-1:#0f1115; --bg-2:#1a1d25;
-      --panel:#0f1218; --panel-ink:#eaf1ff; --muted:#97a3b6; --border:rgba(255,255,255,.08);
-      --brand:#ff4d2e; --brand-2:#ff8f70; --accent:#2ea8ff;
-    }
-    *{box-sizing:border-box} html,body{height:100%;margin:0}
-    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--panel-ink);
-      background: radial-gradient(1200px 800px at 15% 10%, #1e2027 0, transparent 60%),
-                  radial-gradient(1200px 800px at 85% 90%, #22252e 0, transparent 60%),
-                  linear-gradient(180deg, var(--bg-1), var(--bg-2)); overflow:hidden;}
-    .app{display:grid; grid-template-rows:auto 1fr auto; height:100%}
-    header{display:grid; grid-template-columns:1fr minmax(260px,560px) 1fr; align-items:center; gap:14px; padding:14px 16px}
-    .brand{display:flex; align-items:center; gap:10px} .brand img{height:36px} .created{justify-self:end; color:#a8b6cc; text-decoration:none}
-    .search{background:rgba(255,255,255,.06); border:1px solid var(--border); height:46px; border-radius:16px;
-      display:flex; align-items:center; gap:10px; padding:0 12px; box-shadow:0 8px 24px rgba(0,0,0,.18); backdrop-filter:blur(6px)}
-    .search input{border:0; outline:0; background:transparent; color:#fff; width:100%; font-size:16px}
-    .search input::placeholder{color:#b6c3d6}
-    main{position:relative; min-height:0}
-    .map-wrap{position:absolute; inset:0}
-    svg{width:100%; height:100%; background:transparent; touch-action:none; cursor:grab} svg:active{cursor:grabbing}
-    #pins .pin{filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
-    #pins text{font-size:14px; font-weight:600; fill:#0b1220; paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round; stroke-linecap:round}
-    #routeGlow{stroke:rgba(255,255,255,.25); stroke-width:10; fill:none; stroke-linecap:round; stroke-linejoin:round; filter:blur(1px)}
-    #routeBg{stroke:rgba(0,0,0,.35); stroke-width:8; fill:none; stroke-linecap:round; stroke-linejoin:round}
-    #route{stroke:url(#gRoute); stroke-width:4.5; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:12 14; animation:dash 2.6s linear infinite; filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
-    @keyframes dash{to{stroke-dashoffset:-260}} #draft{stroke:#7aa0ff; stroke-width:3; stroke-dasharray:6 8; fill:none; opacity:.9}
-    #arrow{filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))} #arrow .head{fill:var(--brand); stroke:#fff; stroke-width:1.5} #arrow .tail{fill:var(--brand); opacity:.92}
-    footer{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border-top:1px solid var(--border);
-      background:linear-gradient(180deg, rgba(17,19,26,.8), rgba(14,16,21,.92)); backdrop-filter:blur(6px)}
-    .chips{display:flex; gap:8px; flex-wrap:wrap}
-    .chip{display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:14px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:#d8e0ee; cursor:pointer}
-    .chip.active{background:rgba(255,77,46,.12); border-color:rgba(255,77,46,.35)} .chip i{color:#8ea3bf}
-    .zoom{display:flex; gap:8px}
-    .btn{display:grid; place-items:center; width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid var(--border); color:#fff; cursor:pointer}
-    .btn:hover{background:rgba(255,255,255,.1)}
-    .suggest{position:absolute; left:50%; transform:translateX(-50%); top:70px; width:min(560px, 92%); z-index:15}
-    .suggest ul{list-style:none; margin:6px 0 0; padding:6px; background:rgba(13,17,24,.96); border:1px solid var(--border); border-radius:12px; box-shadow:0 12px 24px rgba(0,0,0,.3)}
-    .suggest li{padding:10px 12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:10px}
-    .suggest li:hover{background:rgba(255,255,255,.06)}
-    .empty{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#aab7cc; text-align:center}
-    @media (max-width:760px){ header{grid-template-columns:1fr; gap:10px} .created{display:none} .chips{gap:6px} .btn{width:40px;height:40px}}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<title>Wayfinding | EDGE LIF</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root{
+    --ink:#e8eef8; --ink-muted:#b7c3d9; --bg:#0e1218; --bg-2:#10161f;
+    --panel: rgba(255,255,255,.06); --panel-border: rgba(255,255,255,.08);
+    --brand:#9ab6ff; --acc:#4cc3ff; --danger:#ff5a67; --ok:#39e29a; --tag:#263244;
+    --route:#fff; --route-bg:#86a7ff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:
+    radial-gradient(1200px 900px at 20% -10%,#1a2230 0%,#0e1218 60%),
+    radial-gradient(900px 700px at 120% 120%,#1b2736 0%,#0e1218 60%);}
+  body{font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);}
+
+  .app{display:grid;grid-template-rows:auto 1fr auto;min-height:100%;}
+  .top{
+    display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+    padding:14px 16px;border-bottom:1px solid var(--panel-border);backdrop-filter:blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand img{height:28px}
+  .brand span{color:var(--ink-muted);font-weight:600}
+  .search{display:flex;align-items:center;background:var(--panel);border:1px solid var(--panel-border);
+    border-radius:16px;padding:10px 14px;max-width:720px;margin:0 auto;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .search i{color:var(--ink-muted);margin-right:10px}
+  .search input{flex:1;background:transparent;border:0;outline:0;color:var(--ink);font-size:16px}
+  .credit{font-size:12px;color:var(--ink-muted)}
+
+  .stage{position:relative;overflow:hidden}
+  svg{width:100%;height:100%;touch-action:none;background:transparent;cursor:grab}
+  svg:active{cursor:grabbing}
+  #routeBg{stroke:var(--route-bg);stroke-width:10;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+  #route{stroke:var(--route);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 10;
+         animation:dash 3s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-180}}
+  #draft{stroke:#8ea1c9;stroke-dasharray:6 6;stroke-width:3;fill:none}
+  #pins text{fill:#0b1020;font-size:14px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:2.5px}
+  .hud{
+    position:absolute;right:16px;top:84px;display:flex;gap:8px;z-index:10}
+  .hud .btn{
+    width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--panel-border);
+    background:var(--panel);color:var(--ink);cursor:pointer}
+  .hud .btn:hover{background:rgba(255,255,255,.08)}
+  .filters{
+    display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--panel-border);
+    background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.15))}
+  .chip{
+    display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--tag);
+    border:1px solid var(--panel-border);color:var(--ink-muted);cursor:pointer;user-select:none}
+  .chip i{opacity:.7}
+  .chip.active{background:#2f3b52;color:#fff;border-color:#3d4a64}
+  .toast{position:absolute;left:50%;top:56%;transform:translateX(-50%);
+    color:var(--ink-muted);opacity:.9;font-size:14px}
+  @media (max-width:768px){
+    .search{max-width:100%}
+    .brand span{display:none}
+    .hud{top:auto;bottom:110px}
+  }
+</style>
 </head>
 <body>
 <div class="app">
-  <header>
-    <div class="brand"><img src="logo.png" alt="EDGE"><span style="color:#b6c5db;font-size:12px">Wayfinding</span></div>
-    <div class="search" id="searchBar"><i class="fa-solid fa-magnifying-glass"></i><input id="searchInput" placeholder="Search a room, office, or space…" autocomplete="off"/><i class="fa-solid fa-xmark" id="clearSearch" style="cursor:pointer;color:#9ab"/></div>
-    <a class="created" href="https://awaizahmed.com" target="_blank">Created by Awaiz Ahmed</a>
-  </header>
-
-  <div class="suggest" id="suggest" style="display:none"><ul id="suggestList"></ul></div>
-
-  <main>
-    <div class="map-wrap">
-      <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="gRoute" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--brand-2)"/><stop offset="100%" stop-color="var(--brand)"/></linearGradient></defs>
-        <image id="bg" href="image.png" x="0" y="0" width="100" height="100"/>
-        <g id="pins"></g>
-        <path id="routeGlow" d=""/><path id="routeBg" d=""/><path id="route" d=""/><path id="draft" d=""/>
-        <g id="arrow" transform="translate(-100,-100)"><path class="tail" d="M-10,-2 L-2,-2 L-2,2 L-10,2 Z"/><path class="head" d="M-2,-7 L10,0 L-2,7 Z"/></g>
-      </svg>
+  <div class="top">
+    <div class="brand"><img src="logo.png" alt="EDGE"><span>Wayfinding</span></div>
+    <div class="search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="q" placeholder="Search a room, office, or space…" />
+      <i class="fa-solid fa-xmark" id="clearSearch" style="cursor:pointer;color:#9ab"></i>
     </div>
-    <div class="empty" id="empty" style="display:none">Couldn’t read map data: Missing or insufficient permissions.</div>
-  </main>
+    <div class="credit">Created by Awaiz Ahmed</div>
+  </div>
 
-  <footer>
-    <div class="chips" id="filters">
-      <div class="chip active" data-category="all"><i class="fa-solid fa-map-location-dot"></i> All</div>
-      <div class="chip" data-category="offices"><i class="fa-solid fa-building"></i> Offices</div>
-      <div class="chip" data-category="training"><i class="fa-solid fa-chalkboard-user"></i> Training</div>
-      <div class="chip" data-category="services"><i class="fa-solid fa-circle-info"></i> Services</div>
-    </div>
-    <div class="zoom">
+  <div class="stage">
+    <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Wayfinding map">
+      <image id="bg" href="image.png" x="0" y="0" width="100" height="100"/>
+      <g id="pins"></g>
+      <path id="routeBg" d=""/>
+      <path id="route" d=""/>
+      <g id="arrow" transform="translate(-100,-100)">
+        <path d="M-11,-4 L-11,4 L4,0 Z" fill="var(--brand)" stroke="#fff" stroke-width="1.5"></path>
+      </g>
+    </svg>
+
+    <div class="hud" aria-label="Map controls">
       <button class="btn" id="zoomIn" title="Zoom in"><i class="fa-solid fa-plus"></i></button>
       <button class="btn" id="zoomOut" title="Zoom out"><i class="fa-solid fa-minus"></i></button>
-      <button class="btn" id="resetView" title="Reset view"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
-      <button class="btn" id="rotateMap" title="Rotate 90°"><i class="fa-solid fa-rotate"></i></button>
+      <button class="btn" id="reset" title="Reset view"><i class="fa-solid fa-rotate"></i></button>
     </div>
-  </footer>
+
+    <div class="toast" id="toast" hidden>Loading…</div>
+  </div>
+
+  <div class="filters" id="filters">
+    <div class="chip active" data-cat="all"><i class="fa-solid fa-map-location-dot"></i> All</div>
+    <div class="chip" data-cat="offices"><i class="fa-solid fa-building"></i> Offices</div>
+    <div class="chip" data-cat="training"><i class="fa-solid fa-chalkboard-user"></i> Training</div>
+    <div class="chip" data-cat="services"><i class="fa-solid fa-circle-info"></i> Services</div>
+    <a class="chip" href="admin.html" title="Admin"><i class="fa-solid fa-screwdriver-wrench"></i> Admin</a>
+  </div>
 </div>
 
 <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+<script>
+  const $ = sel => document.querySelector(sel);
+  const svg = $('#svg'), bg = $('#bg'), pinsLayer = $('#pins'), route = $('#route'), routeBg = $('#routeBg');
+  const arrow = $('#arrow'), toast = $('#toast'), q = $('#q');
 
-<!-- Firebase v10 (ESM) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  let data = { markers:{}, routes:{}, you:null }, pan = null, anim = null;
 
-  // PASTE your exact config here (from Firebase console)
-  const firebaseConfig = {
-    apiKey: "AIzaSyBrDzDTtuoZ6iN-hcEZ2_iFJKd6rzor0Mc",
-    authDomain: "mobilemapitproject.firebaseapp.com",
-    projectId: "mobilemapitproject",
-    storageBucket: "mobilemapitproject.firebasestorage.app",
-    messagingSenderId: "478246668451",
-    appId: "1:478246668451:web:0bc300699bbd7168dd9716"
-  };
+  const key = (a,b) => `${a}→${b}`;
+  const drawD = pts => pts && pts.length ? `M ${pts[0].x} ${pts[0].y} L ${pts.map(p=>`${p.x} ${p.y}`).join(' ')}` : '';
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const ref = doc(db, "maps", "main-map-data");
+  function notify(msg, show=true){ toast.textContent = msg; toast.hidden = !show; }
 
-  const $ = s => document.querySelector(s);
-  const svg=$("#svg"), pins=$("#pins"), bg=$("#bg");
-  const route=$("#route"), routeBg=$("#routeBg"), routeGlow=$("#routeGlow"), arrow=$("#arrow"), draft=$("#draft");
-  const empty=$("#empty"), filters=$("#filters"), searchInput=$("#searchInput"), clearSearch=$("#clearSearch");
-  const suggest=$("#suggest"), suggestList=$("#suggestList");
-  const zoomIn=$("#zoomIn"), zoomOut=$("#zoomOut"), resetView=$("#resetView"), rotateMap=$("#rotateMap");
+  // fit SVG viewBox to the natural image size so your x/y match the JSON
+  function fitToImage(){
+    const img = new Image();
+    img.onload = ()=>{
+      const W = img.naturalWidth, H = img.naturalHeight;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      bg.setAttribute('width', W);
+      bg.setAttribute('height', H);
 
-  let ROUTES={}, MARKERS={}, YOU=null, rotation=0, panzoom;
-
-  function pinGroup(name,p){
-    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
-    g.classList.add("pin"); g.setAttribute("transform",`translate(${p.x},${p.y})`);
-    const pinPath="M0,-15 C-7,-15 -12,-10 -12,-3 C-12,6 0,15 0,15 C0,15 12,6 12,-3 C12,-10 7,-15 0,-15 Z";
-    const path= document.createElementNS("http://www.w3.org/2000/svg","path"); path.setAttribute("d",pinPath); path.setAttribute("fill","#1b2536"); path.setAttribute("stroke","#fff"); path.setAttribute("stroke-width","2");
-    const dot = document.createElementNS("http://www.w3.org/2000/svg","circle"); dot.setAttribute("r","4"); dot.setAttribute("cy","-7"); dot.setAttribute("fill","var(--accent)");
-    const t   = document.createElementNS("http://www.w3.org/2000/svg","text"); t.setAttribute("y","26"); t.setAttribute("text-anchor","middle"); t.textContent=name;
-    g.append(path,dot,t); g.style.cursor="pointer"; g.addEventListener("click",()=>navigateTo(name)); return g;
+      // panzoom
+      pan = Panzoom(svg, {
+        maxScale: 10, minScale: 0.25,
+        startScale: Math.min(svg.parentElement.clientWidth/W, svg.parentElement.clientHeight/H)
+      });
+      svg.parentElement.addEventListener('wheel', pan.zoomWithWheel);
+      $('#zoomIn').onclick = ()=> pan.zoomIn();
+      $('#zoomOut').onclick = ()=> pan.zoomOut();
+      $('#reset').onclick  = ()=> pan.reset();
+    };
+    img.src = bg.getAttribute('href');
   }
 
-  function renderPins(category="all"){
-    if(!bg.getAttribute("width")) return;
-    pins.innerHTML="";
-    Object.entries(MARKERS).forEach(([name,p])=>{
-      if(category!=="all" && (p.category||"general")!==category) return;
-      pins.appendChild(pinGroup(name,p));
-    });
-    if(YOU){
-      const g=document.createElementNS("http://www.w3.org/2000/svg","g"); g.setAttribute("transform",`translate(${YOU.x},${YOU.y})`);
-      const ring=document.createElementNS("http://www.w3.org/2000/svg","circle"); ring.setAttribute("r","9"); ring.setAttribute("fill","rgba(46,168,255,.4)"); ring.setAttribute("stroke","#fff"); ring.setAttribute("stroke-width","2");
-      const core=document.createElementNS("http://www.w3.org/2000/svg","circle"); core.setAttribute("r","4"); core.setAttribute("fill","#2ea8ff");
-      const label=document.createElementNS("http://www.w3.org/2000/svg","text"); label.setAttribute("y","-14"); label.setAttribute("text-anchor","middle"); label.textContent="You are here";
-      g.append(ring,core,label); pins.appendChild(g);
+  function renderPins(filter='all'){
+    pinsLayer.innerHTML = '';
+    for(const [name,p] of Object.entries(data.markers)){
+      if(filter!=='all' && (p.category||'').toLowerCase()!==filter) continue;
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${p.x},${p.y})`);
+      g.style.cursor = 'pointer';
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('r', 8); c.setAttribute('fill', '#ef4444'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2');
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',0); t.setAttribute('y',24); t.setAttribute('text-anchor','middle'); t.textContent = name;
+      g.append(c,t);
+      g.addEventListener('click', ()=> navigateTo(name));
+      pinsLayer.appendChild(g);
+    }
+    if(data.you){
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${data.you.x},${data.you.y})`);
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('r', 7); c.setAttribute('fill', '#007aff'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width','3');
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',0); t.setAttribute('y',-16); t.setAttribute('text-anchor','middle');
+      t.style.fontSize='16px'; t.textContent='You are here';
+      g.append(c,t); pinsLayer.appendChild(g);
     }
   }
 
-  function drawPathD(list){ if(!list?.length) return ""; const a=list[0]; return `M ${a.x} ${a.y} L ${list.map(p=>`${p.x} ${p.y}`).join(" ")}` }
-  function clearRoute(){ route.setAttribute("d",""); routeBg.setAttribute("d",""); routeGlow.setAttribute("d",""); arrow.setAttribute("transform","translate(-100,-100)"); }
+  function clearRoute(){ route.setAttribute('d',''); routeBg.setAttribute('d',''); stopArrow(); }
   function showRoute(from,to){
     clearRoute();
-    const arr=ROUTES[`${from}→${to}`]; if(!arr?.length) return;
-    const d=drawPathD(arr); routeGlow.setAttribute("d",d); routeBg.setAttribute("d",d); route.setAttribute("d",d); animateAlong(route);
+    const pts = data.routes[key(from,to)];
+    if(!pts){ notify('No saved route for this destination.', true); return; }
+    notify('', false);
+    const d = drawD(pts);
+    route.setAttribute('d', d); routeBg.setAttribute('d', d);
+    animateAlong(route);
   }
 
-  let anim=null;
   function animateAlong(path){
-    const L=path.getTotalLength(); if(!L) return; let t0=null; const dur=Math.max(2200,L*5);
-    const step=ts=>{
-      if(!t0) t0=ts; const dlen=((ts-t0)%dur)/dur*L;
-      const p1=path.getPointAtLength(dlen), p2=path.getPointAtLength(Math.min(dlen+6,L));
-      const angle=Math.atan2(p2.y-p1.y,p2.x-p1.x)*180/Math.PI;
-      const pt=svg.createSVGPoint(); pt.x=p1.x; pt.y=p1.y;
-      const screen=pt.matrixTransform(path.getCTM());
-      arrow.setAttribute("transform",`translate(${screen.x},${screen.y}) rotate(${angle})`);
-      anim=requestAnimationFrame(step);
-    };
-    if(anim) cancelAnimationFrame(anim); anim=requestAnimationFrame(step);
+    const L = path.getTotalLength(); if(!L) return;
+    let t0 = null;
+    function step(ts){
+      if(t0===null) t0 = ts;
+      const dur = Math.max(2200, L*5);
+      const l = ((ts - t0) % dur) / dur * L;
+      const p1 = path.getPointAtLength(l);
+      const p2 = path.getPointAtLength(Math.min(l+6, L));
+      const ang = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180/Math.PI;
+      arrow.setAttribute('transform',`translate(${p1.x},${p1.y}) rotate(${ang})`);
+      anim = requestAnimationFrame(step);
+    }
+    stopArrow(); anim = requestAnimationFrame(step);
+  }
+  function stopArrow(){ if(anim) cancelAnimationFrame(anim); anim=null; arrow.setAttribute('transform','translate(-100,-100)'); }
+
+  function navigateTo(name){
+    if(!data.you){ notify('Set "you" in way.json first.', true); return; }
+    showRoute('YOU', name);
+    q.value = name;
   }
 
-  function fitToImage(){
-    const img=new Image();
-    img.onload=()=>{
-      const W=img.naturalWidth||768, H=img.naturalHeight||1344;
-      svg.setAttribute("viewBox",`0 0 ${W} ${H}`); bg.setAttribute("width",W); bg.setAttribute("height",H);
-      panzoom = Panzoom(svg,{maxScale:14,minScale:0.35,startScale:Math.min(svg.clientWidth/W, svg.clientHeight/H)});
-      svg.parentElement.addEventListener("wheel", panzoom.zoomWithWheel);
-      renderPins();
-    }; img.src=bg.getAttribute("href");
+  async function load(){
+    try{
+      notify('Loading map…');
+      const res = await fetch('way.json', {cache:'no-store'});
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+      notify('', false);
+      fitToImage();
+      renderPins('all');
+    }catch(e){
+      console.error(e);
+      notify(`Couldn't read map data. Place way.json next to index.html`);
+    }
   }
 
   // Filters
-  let currentCategory="all";
-  filters.addEventListener("click",e=>{
-    const chip=e.target.closest(".chip"); if(!chip) return;
-    [...filters.children].forEach(c=>c.classList.remove("active")); chip.classList.add("active");
-    currentCategory=chip.dataset.category; renderPins(currentCategory); clearRoute();
+  $('#filters').addEventListener('click', e=>{
+    const chip = e.target.closest('.chip'); if(!chip || !chip.dataset.cat) return;
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    clearRoute(); renderPins(chip.dataset.cat);
   });
 
-  // Search + suggestions
-  function updateSuggest(){
-    const q=searchInput.value.toLowerCase().trim();
-    const list=Object.keys(MARKERS).filter(k=>k.toLowerCase().includes(q)).slice(0,10);
-    if(!q || !list.length){ suggest.style.display="none"; return; }
-    suggestList.innerHTML=list.map(x=>`<li data-name="${x}"><i class="fa-solid fa-location-dot"></i>${x}</li>`).join("");
-    suggest.style.display="block";
-  }
-  suggestList.addEventListener("click",e=>{
-    const li=e.target.closest("li"); if(!li) return; searchInput.value=li.dataset.name; suggest.style.display="none"; navigateTo(li.dataset.name);
+  // Search
+  q.addEventListener('keydown', e=>{
+    if(e.key!=='Enter') return;
+    const s = q.value.trim().toLowerCase();
+    const hit = Object.keys(data.markers).find(n=>n.toLowerCase()===s || n.toLowerCase().includes(s));
+    if(hit) navigateTo(hit); else notify('Location not found.');
   });
-  document.getElementById("searchBar").addEventListener("keydown",e=>{
-    if(e.key==="Enter"){ const v=searchInput.value.trim(); if(!v){ clearRoute(); return; }
-      const match=Object.keys(MARKERS).find(k=>k.toLowerCase()===v.toLowerCase()); navigateTo(match||v); suggest.style.display="none"; }
-  });
-  searchInput.addEventListener("input", updateSuggest);
-  clearSearch.addEventListener("click",()=>{ searchInput.value=""; suggest.style.display="none"; clearRoute(); });
+  $('#clearSearch').onclick = ()=>{ q.value=''; clearRoute(); };
 
-  // Zoom buttons (fixed to API to avoid zoomBy error)
-  zoomIn.addEventListener("click",()=> panzoom && panzoom.zoomIn({animate:true}));
-  zoomOut.addEventListener("click",()=> panzoom && panzoom.zoomOut({animate:true}));
-  resetView.addEventListener("click",()=> panzoom && panzoom.reset({animate:true}));
-  rotateMap.addEventListener("click",()=>{
-    rotation=(rotation+90)%360; const W=parseInt(bg.getAttribute("width")), H=parseInt(bg.getAttribute("height"));
-    const t=`rotate(${rotation} ${W/2} ${H/2})`; [bg,pins,route,routeBg,routeGlow,draft].forEach(el=>el.setAttribute("transform",t));
-    renderPins(currentCategory); if(route.getAttribute("d")) animateAlong(route);
-  });
-
-  const navigateTo=name=>{
-    if(!YOU){ alert('“You are here” is not set yet.'); return; }
-    const key=`YOU→${name}`; if(!ROUTES[key]){ alert(`No route from YOU → ${name}.\nUse Admin to draw one.`); return; }
-    showRoute('YOU', name);
-  };
-
-  // Live data
-  onSnapshot(ref, snap=>{
-    if(!snap.exists()){ empty.style.display="block"; empty.textContent="No map data found at maps/main-map-data."; return; }
-    empty.style.display="none";
-    const data=snap.data(); ROUTES=data.routes||{}; MARKERS=data.markers||{}; YOU=data.you||null;
-    renderPins(currentCategory); updateSuggest();
-  }, err=>{
-    empty.style.display="block"; empty.textContent=`Couldn't read map data: ${err.message}`;
-    console.error(err);
-  });
-
-  fitToImage();
+  load();
 </script>
 </body>
 </html>

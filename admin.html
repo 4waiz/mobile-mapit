@@ -1,191 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
-<title>EDGE — Wayfinding Admin</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<title>Wayfinding Admin</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0f1115;--panel:#121722;--border:#1f2a3d;--ink:#e6f0ff;--muted:#9bb0c9;--orange:#ff4d2e;--accent:#2ea8ff}
-  *{box-sizing:border-box} html,body{height:100%;margin:0} body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0f1115,#171a22);color:var(--ink);overflow:hidden}
-  .wrap{display:grid; grid-template-rows:auto 1fr; height:100%}
-  header{display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid #212a3a}
-  header img{height:32px}
-  .badge{font-size:12px;color:#b8c9e3}
-  .tools{position:absolute; left:12px; top:64px; width:320px; background:rgba(18,23,34,.94); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px; z-index:10}
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  .btn{background:#1a2435; color:#e7f0ff; border:1px solid #27344b; border-radius:10px; padding:8px 10px; cursor:pointer}
-  .btn:hover{background:#222e44}
-  select,input[type="file"]{width:100%; background:#0e1523; color:#cfe1ff; border:1px solid #263147; border-radius:8px; padding:8px}
-  .map{position:relative; min-height:0} svg{width:100%; height:100%; cursor:grab; touch-action:none; background:transparent}
-  svg:active{cursor:grabbing}
-  #route,#draft{fill:none; stroke-linecap:round; stroke-linejoin:round} #route{stroke:#fff; stroke-width:3.5; stroke-dasharray:10 12; animation:dash 3s linear infinite} @keyframes dash{to{stroke-dashoffset:-180}}
-  #routeBg{stroke:#8a97ad; stroke-width:8; fill:none}
-  #pins text{fill:#111; font-size:14px; font-weight:600; paint-order:stroke; stroke:#fff; stroke-width:3px}
-  .login{position:fixed; inset:0; display:grid; place-items:center; background:linear-gradient(180deg,#0f1115e6,#12151de6); z-index:20}
-  .card{background:#121722; border:1px solid var(--border); border-radius:16px; padding:18px; width:min(360px, 92%)}
-  .card h2{margin:0 0 6px} .row{display:flex; flex-direction:column; gap:6px; margin:8px 0}
-  .row input{padding:10px; border-radius:10px; border:1px solid #283246; background:#0e1523; color:#cfe1ff}
-  .err{color:#ffa9a9; min-height:18px; font-size:13px}
-  @media (max-width:780px){ .tools{width:calc(100% - 24px); left:12px; top:auto; bottom:12px} }
+  :root{ --bg:#0e1218; --panel:#1a2332; --border:#2a3446; --ink:#e8eef8; --mut:#9fb2cc; --brand:#9ab6ff; --ok:#39e29a; --warn:#ffb454; --danger:#ff5a67;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+  aside{border-right:1px solid var(--border);background:#121a26;padding:14px;display:flex;flex-direction:column;gap:10px}
+  h3{margin:8px 0 4px;color:#bcd1ea;font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+  .btn{background:#152031;border:1px solid var(--border);border-radius:10px;color:#e8eef8;padding:10px 12px;cursor:pointer}
+  .btn:hover{background:#1b2940}
+  .btn.primary{background:#284691;border-color:#284691}
+  .btn.danger{background:#341f24;border-color:#4a2b31;color:#ffb1ba}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .map{position:relative;overflow:hidden}
+  svg{width:100%;height:100%;background:transparent;cursor:crosshair}
+  #routeBg{stroke:#86a7ff;stroke-width:10;fill:none;opacity:.55}
+  #route{stroke:#fff;stroke-width:3.5;fill:none;stroke-dasharray:8 10;animation:dash 3s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-180}}
+  #draft{stroke:#8ea1c9;stroke-dasharray:6 6;stroke-width:3;fill:none}
+  #pins text{fill:#0b1020;font-size:14px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:2.5px}
+  .auth{position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.65)}
+  .card{background:#101826;border:1px solid var(--border);border-radius:12px;padding:20px;min-width:320px}
+  .card input{width:100%;margin:6px 0 12px;background:#111a28;color:#fff;border:1px solid #243047;border-radius:8px;padding:10px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header><img src="logo.png" alt=""><span class="badge">Wayfinding Admin</span></header>
-  <div class="tools">
-    <div class="grid">
-      <button class="btn" id="addPoint"><i class="fa-solid fa-location-dot"></i> Add point</button>
-      <button class="btn" id="setHere"><i class="fa-solid fa-crosshairs"></i> Set “You are here”</button>
-    </div>
-    <label>From</label><select id="fromSel"></select>
-    <label>To</label><select id="toSel"></select>
-    <div class="grid">
-      <button class="btn" id="btnDraw"><i class="fa-solid fa-pen"></i> Draw path</button>
-      <button class="btn" id="btnUndo" disabled><i class="fa-solid fa-rotate-left"></i> Undo</button>
-    </div>
-    <div class="grid">
-      <button class="btn" id="btnSave" disabled><i class="fa-solid fa-floppy-disk"></i> Save route</button>
-      <button class="btn" id="btnDelete"><i class="fa-solid fa-trash"></i> Delete route</button>
-    </div>
-    <div class="grid">
-      <button class="btn" id="exportJson"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
-      <label class="btn" for="importFile"><i class="fa-solid fa-file-arrow-up"></i> Import</label>
-    </div>
-    <input id="importFile" type="file" accept="application/json"/>
-    <div class="grid">
-      <button class="btn" id="zoomIn"><i class="fa-solid fa-plus"></i></button>
-      <button class="btn" id="zoomOut"><i class="fa-solid fa-minus"></i></button>
-    </div>
-    <button class="btn" id="resetView"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> Reset view</button>
-    <button class="btn" id="rotateMap"><i class="fa-solid fa-rotate"></i> Rotate map</button>
+<div id="gate" class="auth">
+  <div class="card">
+    <h2 style="margin:0 0 8px">Admin Sign-in</h2>
+    <p style="margin:0 0 12px;color:#9fb2cc">Use your assigned credentials.</p>
+    <input id="u" placeholder="Username" autocomplete="username" />
+    <input id="p" type="password" placeholder="Password" autocomplete="current-password" />
+    <button class="btn primary" id="loginBtn">Sign in</button>
+    <div id="err" style="color:#ff9b9b;margin-top:8px;display:none">Wrong credentials</div>
   </div>
+</div>
 
-  <div class="map">
+<div class="wrap" id="app" style="display:none">
+  <aside>
+    <h3>Data</h3>
+    <div class="row">
+      <button class="btn" id="importBtn"><i class="fa-solid fa-file-import"></i>&nbsp; Import JSON</button>
+      <button class="btn" id="exportBtn"><i class="fa-solid fa-file-export"></i>&nbsp; Export JSON</button>
+    </div>
+    <h3>Markers</h3>
+    <div class="row">
+      <button class="btn" id="addPoint">+ Add point</button>
+      <button class="btn" id="setHere">Set “You are here”</button>
+    </div>
+    <h3>Routing</h3>
+    <label>From</label>
+    <select id="fromSel" class="btn"></select>
+    <label style="margin-top:8px">To</label>
+    <select id="toSel" class="btn"></select>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="draw">Draw path</button>
+      <button class="btn" id="undo" disabled>Undo</button>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="save" disabled>Save route</button>
+      <button class="btn danger" id="del">Delete route</button>
+    </div>
+    <input id="file" type="file" accept="application/json" hidden>
+  </aside>
+
+  <main class="map">
     <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <image id="bg" href="image.png" x="0" y="0" width="100" height="100"/>
       <g id="pins"></g>
-      <path id="routeBg" d=""/><path id="route" d=""/><path id="draft" d=""/>
-      <g id="arrow" transform="translate(-100,-100)"><circle r="4" fill="var(--orange)"/></g>
+      <path id="routeBg" d=""/>
+      <path id="route" d=""/>
+      <path id="draft" d=""/>
     </svg>
-  </div>
-</div>
-
-<!-- Login overlay -->
-<div class="login" id="login">
-  <div class="card">
-    <h2>Admin sign‑in</h2>
-    <p class="muted">Enter your admin credentials to edit the map.</p>
-    <div class="row"><label>Username</label><input id="u" autocomplete="username" placeholder="awaiz"></div>
-    <div class="row"><label>Password</label><input id="p" type="password" autocomplete="current-password" placeholder="1234"></div>
-    <div class="err" id="err"></div>
-    <div class="grid"><button class="btn" id="loginBtn"><i class="fa-solid fa-unlock"></i> Sign in</button>
-      <button class="btn" id="cancelBtn">Cancel</button></div>
-  </div>
+  </main>
 </div>
 
 <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+<script>
+  // --- auth ---
+  const userOK = "awaiz", passOK = "1234";
+  const gate = document.getElementById('gate'), app = document.getElementById('app');
+  document.getElementById('loginBtn').onclick = ()=>{
+    const u = document.getElementById('u').value.trim();
+    const p = document.getElementById('p').value;
+    if(u===userOK && p===passOK){ gate.style.display='none'; app.style.display='grid'; init(); }
+    else document.getElementById('err').style.display='block';
+  };
 
-  // PASTE your exact config here
-    const firebaseConfig = {
-    apiKey: "AIzaSyBrDzDTtuoZ6iN-hcEZ2_iFJKd6rzor0Mc",
-    authDomain: "mobilemapitproject.firebaseapp.com",
-    projectId: "mobilemapitproject",
-    storageBucket: "mobilemapitproject.firebasestorage.app",
-    messagingSenderId: "478246668451",
-    appId: "1:478246668451:web:0bc300699bbd7168dd9716"
+  // --- editor state ---
+  const $=q=>document.querySelector(q);
+  const svg=$('#svg'), pins=$('#pins'), bg=$('#bg'), route=$('#route'), routeBg=$('#routeBg'), draft=$('#draft');
+  const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), file=$('#file');
+  const fromSel=$('#fromSel'), toSel=$('#toSel'), drawBtn=$('#draw'), undoBtn=$('#undo'), saveBtn=$('#save'), delBtn=$('#del');
+  let DATA={markers:{},routes:{},you:null}, placing=null, drawing=false, pts=[], pan=null;
+
+  const key=(a,b)=>`${a}→${b}`; const drawD=pts=>pts.length?`M ${pts[0].x} ${pts[0].y} L ${pts.map(p=>`${p.x} ${p.y}`).join(' ')}`:'';
+
+  async function init(){
+    await load();
+    fitToImage();
+    fillSelects();
+    renderPins();
+    // controls
+    addPointBtn.onclick = ()=> placing = 'point';
+    setHereBtn.onclick  = ()=> placing = 'here';
+    drawBtn.onclick     = ()=>{ if(!toSel.value) return alert('Choose destination'); drawing=true; pts=[]; draft.setAttribute('d',''); undoBtn.disabled=false; saveBtn.disabled=false; };
+    undoBtn.onclick     = ()=>{ if(!drawing||!pts.length) return; pts.pop(); draft.setAttribute('d', drawD(pts)); };
+    saveBtn.onclick     = ()=>{ if(!drawing||!pts.length) return; const f=fromSel.value||'YOU', t=toSel.value; DATA.routes[key(f,t)]=pts.slice(); drawing=false; pts=[]; draft.setAttribute('d',''); undoBtn.disabled=true; saveBtn.disabled=true; showRoute(f,t); };
+    delBtn.onclick      = ()=>{ const f=fromSel.value||'YOU', t=toSel.value; const k=key(f,t); if(DATA.routes[k] && confirm(`Delete ${k}?`)){ delete DATA.routes[k]; clearRoute(); } };
+
+    // import/export
+    document.getElementById('importBtn').onclick = ()=> file.click();
+    file.onchange = e=>{
+      const f = e.target.files[0]; if(!f) return;
+      f.text().then(t=>{ DATA = JSON.parse(t); renderPins(); fillSelects(); }).catch(()=>alert('Invalid JSON'));
+      file.value='';
+    };
+    document.getElementById('exportBtn').onclick = ()=>{
+      const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='way.json'; a.click(); URL.revokeObjectURL(a.href);
     };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const ref = doc(db,"maps","main-map-data");
-
-  // simple login gate
-  const login=document.getElementById('login'), u=document.getElementById('u'), p=document.getElementById('p'), err=document.getElementById('err');
-  document.getElementById('loginBtn').onclick=async ()=>{
-    if(u.value==='awaiz' && p.value==='1234'){
-      try{ await signInAnonymously(auth); login.style.display='none'; }
-      catch(e){ err.textContent = e.message; }
-    }else{ err.textContent='Invalid username or password.'; }
-  };
-  document.getElementById('cancelBtn').onclick=()=>{ u.value=''; p.value=''; };
-
-  // editor logic
-  const $=s=>document.querySelector(s);
-  const svg=$("#svg"), pins=$("#pins"), bg=$("#bg"), route=$("#route"), routeBg=$("#routeBg"), draft=$("#draft"), arrow=$("#arrow");
-  const addPointBtn=$("#addPoint"), setHereBtn=$("#setHere"), fromSel=$("#fromSel"), toSel=$("#toSel");
-  const btnDraw=$("#btnDraw"), btnUndo=$("#btnUndo"), btnSave=$("#btnSave"), btnDelete=$("#btnDelete");
-  const importFile=$("#importFile"), exportJson=$("#exportJson");
-  const zoomIn=$("#zoomIn"), zoomOut=$("#zoomOut"), resetView=$("#resetView"), rotateMapBtn=$("#rotateMap");
-
-  let ROUTES={}, MARKERS={}, YOU=null, drawing=false, points=[], rotation=0, panzoom;
-
-  function addOpt(el,val,txt){ const o=document.createElement('option'); o.value=val; o.textContent=txt; el.appendChild(o); }
-  function fillSelects(){ fromSel.innerHTML=''; toSel.innerHTML=''; addOpt(fromSel,'YOU','You are here'); Object.keys(MARKERS).sort().forEach(k=>{ addOpt(fromSel,k,k); addOpt(toSel,k,k); }); }
-  function renderPins(){
-    if(!bg.getAttribute('width')) return;
-    pins.innerHTML='';
-    Object.entries(MARKERS).forEach(([name,p])=>{
-      const g=document.createElementNS("http://www.w3.org/2000/svg","g"); g.setAttribute('transform',`translate(${p.x},${p.y})`); g.style.cursor='pointer';
-      const c=document.createElementNS("http://www.w3.org/2000/svg","circle"); c.setAttribute('r','8'); c.setAttribute('fill','#7c3aed'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','2');
-      const t=document.createElementNS("http://www.w3.org/2000/svg","text"); t.setAttribute('y','24'); t.setAttribute('text-anchor','middle'); t.textContent=name;
-      g.append(c,t); pins.appendChild(g);
+    // svg clicks
+    const svgPoint = e => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    };
+    svg.addEventListener('click', e=>{
+      const p = svgPoint(e);
+      if(placing==='point'){
+        const name = prompt('Location name:'); if(!name) return placing=null;
+        const cat = (prompt('Category (offices, training, services)','general')||'general').toLowerCase();
+        DATA.markers[name] = {x:Math.round(p.x), y:Math.round(p.y), category:cat};
+        placing=null; renderPins(); fillSelects();
+      }else if(placing==='here'){
+        DATA.you = {x:Math.round(p.x), y:Math.round(p.y)}; placing=null; renderPins();
+      }else if(drawing){
+        pts.push({x:Math.round(p.x), y:Math.round(p.y)}); draft.setAttribute('d', drawD(pts));
+      }
     });
-    if(YOU){ const g=document.createElementNS("http://www.w3.org/2000/svg","g"); g.setAttribute('transform',`translate(${YOU.x},${YOU.y})`);
-      const c=document.createElementNS("http://www.w3.org/2000/svg","circle"); c.setAttribute('r','9'); c.setAttribute('fill','#2ea8ff'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','3');
-      const t=document.createElementNS("http://www.w3.org/2000/svg","text"); t.setAttribute('y','-14'); t.setAttribute('text-anchor','middle'); t.textContent='You are here';
-      g.append(c,t); pins.appendChild(g); }
   }
 
-  function drawPathD(list){ if(!list?.length) return ''; const a=list[0]; return `M ${a.x} ${a.y} L ${list.map(p=>`${p.x} ${p.y}`).join(' ')}` }
-  function clearRoute(){ route.setAttribute('d',''); routeBg.setAttribute('d',''); draft.setAttribute('d',''); arrow.setAttribute('transform','translate(-100,-100)'); }
-  function showRoute(from,to){ const arr=ROUTES[`${from}→${to}`]; if(!arr?.length) return; const d=drawPathD(arr); routeBg.setAttribute('d',d); route.setAttribute('d',d); }
-
-  // Panzoom
+  async function load(){
+    try{
+      const res = await fetch('way.json', {cache:'no-store'}); DATA = await res.json();
+      // keep a live working copy in localStorage for convenience
+      localStorage.setItem('way.json', JSON.stringify(DATA));
+    }catch{
+      const cached = localStorage.getItem('way.json');
+      if(cached) DATA = JSON.parse(cached);
+    }
+  }
   function fitToImage(){
-    const img=new Image();
-    img.onload=()=>{ const W=img.naturalWidth||768, H=img.naturalHeight||1344;
-      svg.setAttribute('viewBox',`0 0 ${W} ${H}`); bg.setAttribute('width',W); bg.setAttribute('height',H);
-      panzoom=Panzoom(svg,{maxScale:16,minScale:0.35,startScale:Math.min(svg.clientWidth/W, svg.clientHeight/H)}); svg.parentElement.addEventListener('wheel', panzoom.zoomWithWheel);
-      renderPins(); fillSelects();
+    const img=new Image(); img.onload=()=>{
+      const W=img.naturalWidth,H=img.naturalHeight; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); bg.setAttribute('width',W); bg.setAttribute('height',H);
+      pan = Panzoom(svg,{maxScale:10,minScale:.25,startScale:Math.min(svg.parentElement.clientWidth/W, svg.parentElement.clientHeight/H)});
+      svg.parentElement.addEventListener('wheel', pan.zoomWithWheel);
     }; img.src=bg.getAttribute('href');
   }
-  zoomIn.addEventListener('click',()=> panzoom && panzoom.zoomIn({animate:true}));
-  zoomOut.addEventListener('click',()=> panzoom && panzoom.zoomOut({animate:true}));
-  resetView.addEventListener('click',()=> panzoom && panzoom.reset({animate:true}));
-  rotateMapBtn.addEventListener('click',()=>{ rotation=(rotation+90)%360; const W=parseInt(bg.getAttribute('width')), H=parseInt(bg.getAttribute('height'));
-    const t=`rotate(${rotation} ${W/2} ${H/2})`; [bg,pins,route,routeBg,draft].forEach(el=>el.setAttribute('transform',t)); renderPins(); if(route.getAttribute('d')) showRoute(fromSel.value||'YOU', toSel.value); });
 
-  // Drawing & saving
-  const svgPoint = e => { const pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
-  addPointBtn.addEventListener('click',()=>window._placing='point');
-  setHereBtn.addEventListener('click',()=>window._placing='here');
-  btnDraw.addEventListener('click',()=>{ if(!toSel.value) return alert('Choose a destination.'); drawing=true; points=[]; btnUndo.disabled=false; btnSave.disabled=false; draft.setAttribute('d',''); });
-  btnUndo.addEventListener('click',()=>{ if(!drawing || !points.length) return; points.pop(); draft.setAttribute('d', drawPathD(points)); });
-  btnSave.addEventListener('click', async ()=>{ if(!drawing || !points.length) return; const from=fromSel.value||'YOU', to=toSel.value; ROUTES[`${from}→${to}`]=points.slice(); await persist(); drawing=false; points=[]; btnUndo.disabled=true; btnSave.disabled=true; draft.setAttribute('d',''); showRoute(from,to); });
-  btnDelete.addEventListener('click', async ()=>{ const from=fromSel.value||'YOU', to=toSel.value; const k=`${from}→${to}`; if(ROUTES[k] && confirm(`Delete route ${k}?`)){ delete ROUTES[k]; await persist(); clearRoute(); }});
+  function fillSelects(){
+    fromSel.innerHTML = ''; toSel.innerHTML = '';
+    const add=(sel,v)=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); };
+    add(fromSel,'YOU'); Object.keys(DATA.markers).sort().forEach(n=>{ add(fromSel,n); add(toSel,n); });
+  }
 
-  exportJson.addEventListener('click', ()=>{ const s=JSON.stringify({markers:MARKERS,routes:ROUTES,you:YOU},null,2); const blob=new Blob([s],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='wayfinding-data.json'; a.click(); URL.revokeObjectURL(url); });
-  importFile.addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; f.text().then(t=>{ const d=JSON.parse(t); MARKERS=d.markers||{}; ROUTES=d.routes||{}; YOU=d.you||null; persist().then(()=>{ renderPins(); fillSelects(); }); }).catch(()=>alert('Invalid JSON')); importFile.value=''; });
+  function renderPins(){
+    pins.innerHTML=''; for(const [name,p] of Object.entries(DATA.markers)){
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('transform',`translate(${p.x},${p.y})`); g.style.cursor='pointer';
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r',8); c.setAttribute('fill','#ef4444'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','2');
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',0); t.setAttribute('y',24); t.setAttribute('text-anchor','middle'); t.textContent=name;
+      g.append(c,t); pins.appendChild(g);
+    }
+    if(DATA.you){
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('transform',`translate(${DATA.you.x},${DATA.you.y})`);
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r',7); c.setAttribute('fill','#007aff'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','3');
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',0); t.setAttribute('y',-16); t.setAttribute('text-anchor','middle'); t.style.fontSize='16px'; t.textContent='You are here';
+      g.append(c,t); pins.appendChild(g);
+    }
+  }
 
-  svg.addEventListener('click', e=>{
-    const pt=svgPoint(e); if(window._placing==='point'){ const name=prompt('Location name:'); if(name){ const cat=prompt('Category (offices, training, services)','general'); MARKERS[name]={x:Math.round(pt.x), y:Math.round(pt.y), category:(cat||'general').toLowerCase()}; persist(); renderPins(); fillSelects(); } window._placing=null; }
-    else if(window._placing==='here'){ YOU={x:Math.round(pt.x), y:Math.round(pt.y)}; window._placing=null; persist(); renderPins(); }
-    else if(drawing){ points.push({x:Math.round(pt.x), y:Math.round(pt.y)}); draft.setAttribute('d', drawPathD(points)); }
-  });
-  window.addEventListener('keydown',e=>{ if(drawing && e.key==='Enter') btnSave.click(); if(drawing && e.key==='Escape'){ drawing=false; points=[]; draft.setAttribute('d',''); btnUndo.disabled=true; btnSave.disabled=true; } });
-
-  // Firestore
-  async function persist(){ try{ await setDoc(ref, {markers:MARKERS, routes:ROUTES, you:YOU}, {merge:true}); }catch(e){ alert('Save failed. See console.'); console.error(e); } }
-  onSnapshot(ref, snap=>{ if(snap.exists()){ const d=snap.data(); ROUTES=d.routes||{}; MARKERS=d.markers||{}; YOU=d.you||null; renderPins(); fillSelects(); }});
-  fitToImage();
+  function clearRoute(){ route.setAttribute('d',''); routeBg.setAttribute('d',''); draft.setAttribute('d',''); }
+  function showRoute(f,t){ const arr=DATA.routes[key(f,t)]; if(!arr) return; const d=drawD(arr); route.setAttribute('d',d); routeBg.setAttribute('d',d); }
 </script>
 </body>
 </html>
