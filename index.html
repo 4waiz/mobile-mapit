@@ -1,239 +1,305 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-<title>Wayfinding | EDGE LIF</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<style>
-  :root{
-    --ink:#e8eef8; --ink-muted:#b7c3d9; --bg:#0e1218; --bg-2:#10161f;
-    --panel: rgba(255,255,255,.06); --panel-border: rgba(255,255,255,.08);
-    --brand:#9ab6ff; --acc:#4cc3ff; --danger:#ff5a67; --ok:#39e29a; --tag:#263244;
-    --route:#fff; --route-bg:#86a7ff;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:
-    radial-gradient(1200px 900px at 20% -10%,#1a2230 0%,#0e1218 60%),
-    radial-gradient(900px 700px at 120% 120%,#1b2736 0%,#0e1218 60%);}
-  body{font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);}
-
-  .app{display:grid;grid-template-rows:auto 1fr auto;min-height:100%;}
-  .top{
-    display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
-    padding:14px 16px;border-bottom:1px solid var(--panel-border);backdrop-filter:blur(6px);
-  }
-  .brand{display:flex;align-items:center;gap:14px}
-  .brand img{height:28px}
-  .brand span{color:var(--ink-muted);font-weight:600}
-  .search{display:flex;align-items:center;background:var(--panel);border:1px solid var(--panel-border);
-    border-radius:16px;padding:10px 14px;max-width:720px;margin:0 auto;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-  .search i{color:var(--ink-muted);margin-right:10px}
-  .search input{flex:1;background:transparent;border:0;outline:0;color:var(--ink);font-size:16px}
-  .credit{font-size:12px;color:var(--ink-muted)}
-
-  .stage{position:relative;overflow:hidden}
-  svg{width:100%;height:100%;touch-action:none;background:transparent;cursor:grab}
-  svg:active{cursor:grabbing}
-  #routeBg{stroke:var(--route-bg);stroke-width:10;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
-  #route{stroke:var(--route);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 10;
-         animation:dash 3s linear infinite}
-  @keyframes dash{to{stroke-dashoffset:-180}}
-  #draft{stroke:#8ea1c9;stroke-dasharray:6 6;stroke-width:3;fill:none}
-  #pins text{fill:#0b1020;font-size:14px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:2.5px}
-  .hud{
-    position:absolute;right:16px;top:84px;display:flex;gap:8px;z-index:10}
-  .hud .btn{
-    width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--panel-border);
-    background:var(--panel);color:var(--ink);cursor:pointer}
-  .hud .btn:hover{background:rgba(255,255,255,.08)}
-  .filters{
-    display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--panel-border);
-    background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.15))}
-  .chip{
-    display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--tag);
-    border:1px solid var(--panel-border);color:var(--ink-muted);cursor:pointer;user-select:none}
-  .chip i{opacity:.7}
-  .chip.active{background:#2f3b52;color:#fff;border-color:#3d4a64}
-  .toast{position:absolute;left:50%;top:56%;transform:translateX(-50%);
-    color:var(--ink-muted);opacity:.9;font-size:14px}
-  @media (max-width:768px){
-    .search{max-width:100%}
-    .brand span{display:none}
-    .hud{top:auto;bottom:110px}
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Wayfinding Map</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    :root {
+      --panel: #ffffff; --border: #e0e0e0; --ink: #333333; --primary-blue: #4488d0; --dev-panel-bg: #81a9d0;
+      --nebula-start: #1c1d24; --nebula-mid-orange: #d6cac2;
+      --nebula-mid-grey: #a7aab1; --nebula-end: #3f4049;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: conic-gradient(at 0% 50%,
+        var(--nebula-start) 0%, var(--nebula-mid-orange) 20%,
+        var(--nebula-start) 35%, var(--nebula-mid-grey) 65%,
+        var(--nebula-start) 80%, var(--nebula-end) 100%);
+      background-size: 200% 200%;
+      animation: panBackground 60s linear infinite alternate;
+    }
+    @keyframes panBackground { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+    .bg-mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    #mesh { display: block; width: 100%; height: 100%; }
+    .app-container { display: flex; width: 100%; height: 100%; position: relative; z-index: 1; }
+    .dev-panel { width: 280px; background: var(--dev-panel-bg); border-right: 1px solid var(--border); padding: 12px; display: none; flex-direction: column; gap: 12px; overflow-y: auto; color: #333; }
+    body.dev-mode .dev-panel { display: flex; } .dev-panel h3 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; color: #666;} .dev-panel .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;} .dev-panel .vsep { height: 1px; background: var(--border); margin: 8px 0; } .dev-panel .btn { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; width: 100%; }
+    .dev-panel .btn:hover { background: #f0f0f0; } .dev-panel .btn.primary { background: var(--primary-blue); color: white; border-color: var(--primary-blue); } .dev-panel .btn.danger { background: #fbecec; color: #dc2626; border-color: #f8d7da; } .dev-panel .btn[disabled] { opacity: .5; cursor: not-allowed; } .dev-panel label { font-size: 14px; margin-bottom: 4px; display: block; } .dev-panel select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;} .dev-panel .hidden { display: none; }
+    .map-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      flex-grow: 1;
+      overflow: hidden; 
+      min-width: 0;
+    }
+    svg { width: 100%; height: 100%; background: transparent; touch-action: none; cursor: grab; }
+    svg:active { cursor: grabbing; }
+    .ui-overlay { position: absolute; z-index: 10; width: 100%; padding: 0 16px; pointer-events: none; } .ui-overlay > * { pointer-events: auto; }
+    .top-bar { top: 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+    .logo-container { grid-column: 1; justify-self: start; }
+    .logo-container img { height: 44px; width: auto; display: block; }
+    .search-wrapper { grid-column: 2; width: 100%; max-width: 400px; }
+    .search-bar { background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; margin: 0 auto;} .search-bar i { color: #888; margin-right: 12px; } .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
+    .created-by { grid-column: 3; justify-self: end; font-size: 15px; color: white; text-decoration: none; text-shadow: 0 0 8px rgba(255, 255, 255, 0.7); }
+    .side-controls { position: absolute; left: 16px; bottom: 120px; z-index: 10; display: flex; flex-direction: row; gap: 10px; } body.dev-mode .side-controls { display: none; }
+    .dev-mode-btn { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; font-size: 18px; }
+    .bottom-bar { bottom: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px 20px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); } body.dev-mode .bottom-bar { display: none; } .category-filters { display: flex; justify-content: space-around; gap: 8px;} .category-item { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; flex-grow: 1; cursor: pointer; padding: 6px; border-radius: 8px;} .category-item.active, .category-item:hover { background-color: #f0f0f0; }
+    .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;} .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;} .icon.walk { background-color: #e8e8e8; color: #333; } .icon.offices { background-color: #dcfce7; color: #16a34a; } .icon.training { background-color: #ffedd5; color: #9a3412; } .icon.services { background-color: #f3f4f6; color: #b27dd1; }
+    #routeBg { stroke: #a09898; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round;} #route { stroke: #ffffff; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 10; animation: dash 3s linear infinite; } @keyframes dash { to { stroke-dashoffset: -180; } }
+    #draft{stroke:#9aa9be;stroke-dasharray:6 6;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round} #arrow { filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); } #arrow .head { fill: var(--primary-blue); stroke: white; stroke-width: 1.5; } #arrow .tail { fill: var(--primary-blue); opacity: .95; }
+    #pins text { fill: #000; font-size: 15px; font-weight: 600; paint-order: stroke; stroke: white; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+    @media (max-width: 700px) {
+      .top-bar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+      .logo-container { order: 1; }
+      .created-by { order: 2; font-size: 12px; }
+      .search-wrapper { order: 3; width: 100%; }
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <div class="top">
-    <div class="brand"><img src="logo.png" alt="EDGE"><span>Wayfinding</span></div>
-    <div class="search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input id="q" placeholder="Search a room, office, or space…" />
-      <i class="fa-solid fa-xmark" id="clearSearch" style="cursor:pointer;color:#9ab"></i>
-    </div>
-    <div class="credit">Created by Awaiz Ahmed</div>
+  <div class="bg-mesh"><canvas id="mesh"></canvas></div>
+  <div class="app-container">
+    <aside class="dev-panel" id="devPanel">
+        <h3>Mode</h3><button class="btn" id="goUserMode">Switch to User Mode</button><div class="vsep"></div>
+        <h3>Locations</h3><div class="grid"><button class="btn" id="addPoint">+ Add point</button><button class="btn" id="setHere">Set "You are here"</button></div><div class="vsep"></div>
+        <h3>Routing</h3><div><label for="fromSel">From</label><select id="fromSel"></select></div><div><label for="toSel">To</label><select id="toSel"></select></div>
+        <div class="grid"><button class="btn" id="btnDraw">Draw path</button><button class="btn" id="btnUndo" disabled>Undo</button></div>
+        <button class="btn primary" id="btnSave" disabled style="margin-top: 8px;">Save route</button><button class="btn danger" id="btnDelete" style="margin-top: 8px;">Delete route</button><div class="vsep"></div>
+        <h3>Data Management</h3><div class="grid"><button class="btn" id="btnExport">Export JSON</button><label class="btn" for="importFile">Import JSON</label><input id="importFile" class="hidden" type="file" accept="application/json" /></div>
+    </aside>
+
+    <main class="map-container">
+      <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <image id="bg" href="image.png" x="0" y="0" width="100" height="100" /><g id="pins"></g><path id="routeBg" d=""></path><path id="route" d=""></path><path id="draft" d=""></path>
+          <!-- Arrow head removed below -->
+          <g id="arrow" transform="translate(-5,-5)"><path class="tail" d="M-0,-0 L-0,0 L-0,0 Z" /></g>
+      </svg>
+      <div class="ui-overlay top-bar">
+        <div class="logo-container"><img src="logo.png" alt="Logo"></div>
+        <div class="search-wrapper"><div class="search-bar"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="searchInput" placeholder="Search"></div></div>
+        <a href="https://awaizahmed.com" target="_blank" class="created-by">Created by Awaiz Ahmed</a>
+      </div>
+      <div class="side-controls">
+        <div class="dev-mode-btn" id="goDevMode"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <div class="dev-mode-btn" id="rotateMap"><i class="fa-solid fa-rotate"></i></div>
+      </div>
+      <div class="ui-overlay bottom-bar"><div class="category-filters" id="category-filters"><div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div><div class="category-item" data-category="offices"><span class="icon offices"><i class="fa-solid fa-building"></i></span><span>Offices</span></div><div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div><div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Services</span></div></div></div>
+    </main>
   </div>
 
-  <div class="stage">
-    <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Wayfinding map">
-      <image id="bg" href="image.png" x="0" y="0" width="100" height="100"/>
-      <g id="pins"></g>
-      <path id="routeBg" d=""/>
-      <path id="route" d=""/>
-      <g id="arrow" transform="translate(-100,-100)">
-        <path d="M-11,-4 L-11,4 L4,0 Z" fill="var(--brand)" stroke="#fff" stroke-width="1.5"></path>
-      </g>
-    </svg>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script>
+    (function(){
+      const canvas = document.getElementById('mesh'); if(!canvas) return; const ctx = canvas.getContext('2d');
+      let w=0,h=0,dpr=1, nodes=[], maxLinks=110, nodeCount=0;
+      const MAX_D = 140, DOT_R = 1.5, SPEED = 0.06; let last=0, hueBase=210;
+      function resize(){
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); w = canvas.clientWidth; h = canvas.clientHeight; canvas.width = w*dpr; canvas.height = h*dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0); nodeCount = Math.max(40, Math.min(120, Math.floor((w*h)/18000))); spawnNodes();
+      }
+      function spawnNodes(){ nodes = new Array(nodeCount).fill(0).map(()=>({ x: Math.random()*w, y: Math.random()*h, vx:(Math.random()*2-1)*SPEED, vy:(Math.random()*2-1)*SPEED })); }
+      function step(ts){
+        if(!last) last = ts; const dt = ts - last; last = ts; ctx.clearRect(0,0,w,h); const hue = (hueBase + (ts/80))%360;
+        for(const n of nodes){ n.x += n.vx * dt; n.y += n.vy * dt; if(n.x<0||n.x>w) n.vx*=-1; if(n.y<0||n.y>h) n.vy*=-1; }
+        ctx.lineWidth = 1; let links = 0;
+        for(let i=0;i<nodes.length;i++){
+          const a = nodes[i];
+          for(let j=i+1;j<nodes.length;j++){
+            const b = nodes[j], dx=a.x-b.x, dy=a.y-b.y, d = Math.hypot(dx,dy);
+            if(d<MAX_D){
+              const alpha = (1 - d/MAX_D) * 0.18; ctx.strokeStyle = `hsla(${hue}, 30%, 75%, ${alpha})`;
+              ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+              if(++links>nodeCount*3 || links>maxLinks) break;
+            }
+          }
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.15)'; for(const n of nodes){ ctx.beginPath(); ctx.arc(n.x, n.y, DOT_R, 0, Math.PI*2); ctx.fill(); }
+        requestAnimationFrame(step);
+      }
+      resize(); requestAnimationFrame(step); window.addEventListener('resize', resize);
+    })();
 
-    <div class="hud" aria-label="Map controls">
-      <button class="btn" id="zoomIn" title="Zoom in"><i class="fa-solid fa-plus"></i></button>
-      <button class="btn" id="zoomOut" title="Zoom out"><i class="fa-solid fa-minus"></i></button>
-      <button class="btn" id="reset" title="Reset view"><i class="fa-solid fa-rotate"></i></button>
-    </div>
+    (function(){
+      const firebaseConfig = {
+        apiKey: "AIzaSyBtDzDtuoZ6iN-hcE22_iFJKd6rzor8Mc", authDomain: "mobilemapitproject.firebaseapp.com", projectId: "mobilemapitproject",
+        storageBucket: "mobilemapitproject.firebaseastorage.app", messagingSenderId: "478246668451", appId: "1:478246668451:web:0bc300699bbd7168dd9716"
+      };
+      firebase.initializeApp(firebaseConfig); const db = firebase.firestore(); const mapDocRef = db.collection("maps").doc("main-map-data");
 
-    <div class="toast" id="toast" hidden>Loading…</div>
-  </div>
+      const $=q=>document.querySelector(q);
+      const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft'), searchInput=$('#searchInput');
+      const goDevMode=$('#goDevMode'), goUserMode=$('#goUserMode'), fromSel=$('#fromSel'), toSel=$('#toSel');
+      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
+      const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
+      const rotateMapBtn = $('#rotateMap');
 
-  <div class="filters" id="filters">
-    <div class="chip active" data-cat="all"><i class="fa-solid fa-map-location-dot"></i> All</div>
-    <div class="chip" data-cat="offices"><i class="fa-solid fa-building"></i> Offices</div>
-    <div class="chip" data-cat="training"><i class="fa-solid fa-chalkboard-user"></i> Training</div>
-    <div class="chip" data-cat="services"><i class="fa-solid fa-circle-info"></i> Services</div>
-    <a class="chip" href="admin.html" title="Admin"><i class="fa-solid fa-screwdriver-wrench"></i> Admin</a>
-  </div>
-</div>
+      let ROUTES={}, MARKERS={}, YOU_POS=null;
+      let mode='user', placing=null, drawing=false, points=[], anim=null, devUnlocked=false, rotation = 0;
 
-<script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-<script>
-  const $ = sel => document.querySelector(sel);
-  const svg = $('#svg'), bg = $('#bg'), pinsLayer = $('#pins'), route = $('#route'), routeBg = $('#routeBg');
-  const arrow = $('#arrow'), toast = $('#toast'), q = $('#q');
+      function loadData() {
+        mapDocRef.onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            ROUTES = data.routes || {}; MARKERS = data.markers || {}; YOU_POS = data.you || null;
+            renderPins(document.querySelector('.category-item.active')?.dataset.category || 'all');
+            fillSelects();
+          }
+        }, error => console.error("Error listening to map data:", error));
+      }
 
-  let data = { markers:{}, routes:{}, you:null }, pan = null, anim = null;
+      function saveDataToFirebase() {
+        if (mode !== 'dev' || !devUnlocked) return;
+        mapDocRef.set({ markers: MARKERS, routes: ROUTES, you: YOU_POS }, { merge: true }).catch(error => console.error("Error saving to Firebase:", error));
+      }
 
-  const key = (a,b) => `${a}→${b}`;
-  const drawD = pts => pts && pts.length ? `M ${pts[0].x} ${pts[0].y} L ${pts.map(p=>`${p.x} ${p.y}`).join(' ')}` : '';
+      function setMode(newMode) {
+        if (newMode === 'dev' && !devUnlocked) {
+            const u=prompt('Username:'), p=prompt('Password:');
+            if (u==='awaiz' && p==='1234') devUnlocked = true; else { alert('Access denied.'); return; }
+        }
+        mode = newMode; document.body.classList.toggle('dev-mode', mode === 'dev'); clearRoute(); renderPins();
+      }
+      
+      function fitToImage(){
+        const img=new Image();
+        img.onload=()=>{
+            const W=img.naturalWidth||768, H=img.naturalHeight||1344;
+            svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+            bg.setAttribute('width',W);
+            bg.setAttribute('height',H);
+            renderPins();
+            
+            const panzoomScript = document.createElement('script');
+            panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+            panzoomScript.onload = () => {
+                const container = svg.parentElement;
+                if (!container) return;
 
-  function notify(msg, show=true){ toast.textContent = msg; toast.hidden = !show; }
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                
+                const scaleX = containerWidth / W;
+                const scaleY = containerHeight / H;
+                const startScale = Math.min(scaleX, scaleY);
 
-  // fit SVG viewBox to the natural image size so your x/y match the JSON
-  function fitToImage(){
-    const img = new Image();
-    img.onload = ()=>{
-      const W = img.naturalWidth, H = img.naturalHeight;
-      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-      bg.setAttribute('width', W);
-      bg.setAttribute('height', H);
+                Panzoom(svg, {
+                    maxScale: 15, // Increased max zoom for more detail
+                    minScale: 0.3, // Allow zooming out further
+                    startScale: startScale, // Start zoomed to fit the whole map
+                    // No 'contain' property for maximum panning freedom
+                });
+            };
+            document.body.appendChild(panzoomScript);
+        };
+        img.src=bg.getAttribute('href');
+      }
 
-      // panzoom
-      pan = Panzoom(svg, {
-        maxScale: 10, minScale: 0.25,
-        startScale: Math.min(svg.parentElement.clientWidth/W, svg.parentElement.clientHeight/H)
+      const keyFor = (f, t) => f + '→' + t;
+      function drawPathD(list) { if (!list || !list.length) return ''; const a = list[0]; return 'M ' + a.x + ' ' + a.y + ' L ' + list.map(p => p.x + ' ' + p.y).join(' '); }
+      function clearRoute() { route.setAttribute('d', ''); routeBg.setAttribute('d', ''); draft.setAttribute('d', ''); if (anim) cancelAnimationFrame(anim); arrow.setAttribute('transform', 'translate(-100,-100)'); }
+      const ns = tag => document.createElementNS('http://www.w3.org/2000/svg', tag);
+      
+      function renderPins(filterCategory = 'all') {
+          if (!MARKERS || !bg.getAttribute('width')) return;
+          pinsLayer.innerHTML = ''; const W = parseInt(bg.getAttribute('width')), H = parseInt(bg.getAttribute('height'));
+          const transform = `rotate(${rotation} ${W/2} ${H/2})`;
+          
+          Object.entries(MARKERS).forEach(([name, p]) => {
+              const categoryOfMarker = p.category || 'general';
+              if (mode === 'user' && filterCategory !== 'all' && categoryOfMarker !== filterCategory) return;
+              const g = ns('g'); g.setAttribute('transform', `translate(${p.x},${p.y})`); g.style.cursor = 'pointer';
+              const c = ns('circle'); c.setAttribute('r', 8); c.style.fill = (mode === 'dev' ? '#7c3aed' : '#ef4444'); c.style.stroke = 'white'; c.style.strokeWidth = '2';
+              const t = ns('text'); t.setAttribute('x', 0); t.setAttribute('y', 24); t.textContent = name; t.setAttribute('text-anchor', 'middle');
+              g.append(c, t); g.addEventListener('click', () => { if (mode === 'user') navigateTo(name); });
+              pinsLayer.appendChild(g);
+          });
+          if (YOU_POS) {
+              const g = ns('g'); g.setAttribute('transform', `translate(${YOU_POS.x},${YOU_POS.y})`);
+              const c = ns('circle'); c.setAttribute('r', 7); c.style.fill = '#007aff'; c.style.stroke = 'white'; c.style.strokeWidth = '3';
+              const t = ns('text'); t.setAttribute('x', 0); t.setAttribute('y', -16); t.textContent = 'You are here'; t.setAttribute('text-anchor', 'middle'); t.style.fontSize = '16px';
+              g.append(c, t); pinsLayer.appendChild(g);
+          }
+          [bg, pinsLayer, route, routeBg, draft].forEach(el => el.setAttribute('transform', transform));
+      }
+      
+      function showRoute(fromKey, toKey) { clearRoute(); if (!fromKey || !toKey || !ROUTES) return; const arr = ROUTES[keyFor(fromKey, toKey)]; if (!arr || !arr.length) return; const d = drawPathD(arr); route.setAttribute('d', d); routeBg.setAttribute('d', d); animateAlong(route); }
+      
+      function animateAlong(path) {
+          const L = path.getTotalLength(); if (L === 0) return; let t0 = null; const dur = Math.max(2000, L * 5);
+          function step(ts) {
+              if (anim === null) return;
+              if (!t0) t0 = ts; const dlen = ((ts - t0) % dur) / dur * L;
+              
+              const current_pos = path.getPointAtLength(dlen);
+              const ahead_pos = path.getPointAtLength(Math.min(dlen + 5, L));
+              const matrix = path.getScreenCTM();
+              
+              const p1 = svg.createSVGPoint(); p1.x = current_pos.x; p1.y = current_pos.y;
+              const p2 = svg.createSVGPoint(); p2.x = ahead_pos.x; p2.y = ahead_pos.y;
+              
+              const final_p1 = p1.matrixTransform(matrix);
+              const final_p2 = p2.matrixTransform(matrix);
+              
+              const angle = Math.atan2(final_p2.y - final_p1.y, final_p2.x - final_p1.x) * 180 / Math.PI;
+
+              arrow.setAttribute('transform', `translate(${final_p1.x},${final_p1.y}) rotate(${angle})`);
+              anim = requestAnimationFrame(step);
+          }
+          if (anim) cancelAnimationFrame(anim);
+          anim = requestAnimationFrame(step);
+      }
+      
+      const navigateTo = name => { if (!YOU_POS) return; showRoute('YOU', name); searchInput.value = name; };
+      const addOpt = (el, val, txt) => { const o = document.createElement('option'); o.value = val; o.textContent = txt; el.appendChild(o); };
+      function fillSelects() { if (!fromSel || !toSel) return; fromSel.innerHTML = ''; toSel.innerHTML = ''; addOpt(fromSel, 'YOU', 'You are here'); Object.keys(MARKERS).sort().forEach(n => { addOpt(fromSel, n, n); addOpt(toSel, n, n); }); }
+
+      goDevMode.addEventListener('click', () => setMode('dev')); goUserMode.addEventListener('click', () => setMode('user'));
+      addPointBtn.addEventListener('click', () => { placing = 'point'; }); setHereBtn.addEventListener('click', () => { placing = 'here'; });
+      btnDraw.addEventListener('click', () => { if (!toSel.value) return alert('Choose a destination.'); drawing = true; points = []; btnUndo.disabled = false; btnSave.disabled = false; draft.setAttribute('d', ''); });
+      btnUndo.addEventListener('click', () => { if (!drawing || !points.length) return; points.pop(); draft.setAttribute('d', drawPathD(points)); });
+      btnSave.addEventListener('click', () => { if (!drawing || !points.length) return; const from = fromSel.value || 'YOU', to = toSel.value; ROUTES[keyFor(from, to)] = points.slice(); saveDataToFirebase(); drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; showRoute(from, to); });
+      btnDelete.addEventListener('click', () => { const from = fromSel.value || 'YOU', to = toSel.value; if (!to) return alert('Select a route to delete.'); const k = keyFor(from, to); if (ROUTES[k] && confirm(`Delete route: ${from} to ${to}?`)) { delete ROUTES[k]; saveDataToFirebase(); clearRoute(); } });
+      btnExport.addEventListener('click', () => { const dataStr = JSON.stringify({ markers: MARKERS, you: YOU_POS, routes: ROUTES }, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'wayfinding-data.json'; a.click(); URL.revokeObjectURL(url); });
+      importFile.addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(text => { const data = JSON.parse(text); MARKERS = data.markers || {}; YOU_POS = data.you || null; ROUTES = data.routes || {}; saveDataToFirebase(); renderPins(); }).catch(err => alert('Invalid JSON.')); importFile.value = ''; });
+      
+      const svgPoint = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+      svg.addEventListener('click', e => {
+          if (mode !== 'dev') return; const p = svgPoint(e);
+          if (placing) {
+              if (placing === 'point') {
+                  const name = prompt('Location name:');
+                  if (name && name.trim()) {
+                      const cat = prompt('Category: (offices, training, services)', 'general');
+                      MARKERS[name.trim()] = { x: Math.round(p.x), y: Math.round(p.y), category: cat ? cat.trim().toLowerCase() : 'general' };
+                      saveDataToFirebase();
+                  }
+              } else if (placing === 'here') { YOU_POS = { x: Math.round(p.x), y: Math.round(p.y) }; saveDataToFirebase(); }
+              placing = null;
+          } else if (drawing) { points.push({ x: Math.round(p.x), y: Math.round(p.y) }); draft.setAttribute('d', drawPathD(points)); }
       });
-      svg.parentElement.addEventListener('wheel', pan.zoomWithWheel);
-      $('#zoomIn').onclick = ()=> pan.zoomIn();
-      $('#zoomOut').onclick = ()=> pan.zoomOut();
-      $('#reset').onclick  = ()=> pan.reset();
-    };
-    img.src = bg.getAttribute('href');
-  }
-
-  function renderPins(filter='all'){
-    pinsLayer.innerHTML = '';
-    for(const [name,p] of Object.entries(data.markers)){
-      if(filter!=='all' && (p.category||'').toLowerCase()!==filter) continue;
-      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.setAttribute('transform',`translate(${p.x},${p.y})`);
-      g.style.cursor = 'pointer';
-      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      c.setAttribute('r', 8); c.setAttribute('fill', '#ef4444'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2');
-      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
-      t.setAttribute('x',0); t.setAttribute('y',24); t.setAttribute('text-anchor','middle'); t.textContent = name;
-      g.append(c,t);
-      g.addEventListener('click', ()=> navigateTo(name));
-      pinsLayer.appendChild(g);
-    }
-    if(data.you){
-      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.setAttribute('transform',`translate(${data.you.x},${data.you.y})`);
-      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      c.setAttribute('r', 7); c.setAttribute('fill', '#007aff'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width','3');
-      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
-      t.setAttribute('x',0); t.setAttribute('y',-16); t.setAttribute('text-anchor','middle');
-      t.style.fontSize='16px'; t.textContent='You are here';
-      g.append(c,t); pinsLayer.appendChild(g);
-    }
-  }
-
-  function clearRoute(){ route.setAttribute('d',''); routeBg.setAttribute('d',''); stopArrow(); }
-  function showRoute(from,to){
-    clearRoute();
-    const pts = data.routes[key(from,to)];
-    if(!pts){ notify('No saved route for this destination.', true); return; }
-    notify('', false);
-    const d = drawD(pts);
-    route.setAttribute('d', d); routeBg.setAttribute('d', d);
-    animateAlong(route);
-  }
-
-  function animateAlong(path){
-    const L = path.getTotalLength(); if(!L) return;
-    let t0 = null;
-    function step(ts){
-      if(t0===null) t0 = ts;
-      const dur = Math.max(2200, L*5);
-      const l = ((ts - t0) % dur) / dur * L;
-      const p1 = path.getPointAtLength(l);
-      const p2 = path.getPointAtLength(Math.min(l+6, L));
-      const ang = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180/Math.PI;
-      arrow.setAttribute('transform',`translate(${p1.x},${p1.y}) rotate(${ang})`);
-      anim = requestAnimationFrame(step);
-    }
-    stopArrow(); anim = requestAnimationFrame(step);
-  }
-  function stopArrow(){ if(anim) cancelAnimationFrame(anim); anim=null; arrow.setAttribute('transform','translate(-100,-100)'); }
-
-  function navigateTo(name){
-    if(!data.you){ notify('Set "you" in way.json first.', true); return; }
-    showRoute('YOU', name);
-    q.value = name;
-  }
-
-  async function load(){
-    try{
-      notify('Loading map…');
-      const res = await fetch('way.json', {cache:'no-store'});
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      data = await res.json();
-      notify('', false);
+      window.addEventListener('keydown', e => { if (drawing && e.key === 'Enter') btnSave.click(); if (drawing && e.key === 'Escape') { drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; } });
+      $('#category-filters').addEventListener('click', e => { const item = e.target.closest('.category-item'); if (!item) return; $('#category-filters .active').classList.remove('active'); item.classList.add('active'); clearRoute(); renderPins(item.dataset.category); });
+      rotateMapBtn.addEventListener('click', () => { rotation = (rotation + 90) % 360; renderPins(); const currentRoute = route.getAttribute('d'); if(currentRoute) { animateAlong(route) } });
+      
+      searchInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+              const query = searchInput.value.trim().toLowerCase();
+              if (!query) { clearRoute(); return; }
+              const matchedKey = Object.keys(MARKERS).find(key => key.trim().toLowerCase() === query);
+              if (matchedKey) { navigateTo(matchedKey); } else { alert('Location not found.'); }
+          }
+      });
+      searchInput.addEventListener('input', () => { if (searchInput.value.trim() === '') clearRoute(); });
+      
       fitToImage();
-      renderPins('all');
-    }catch(e){
-      console.error(e);
-      notify(`Couldn't read map data. Place way.json next to index.html`);
-    }
-  }
-
-  // Filters
-  $('#filters').addEventListener('click', e=>{
-    const chip = e.target.closest('.chip'); if(!chip || !chip.dataset.cat) return;
-    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-    chip.classList.add('active');
-    clearRoute(); renderPins(chip.dataset.cat);
-  });
-
-  // Search
-  q.addEventListener('keydown', e=>{
-    if(e.key!=='Enter') return;
-    const s = q.value.trim().toLowerCase();
-    const hit = Object.keys(data.markers).find(n=>n.toLowerCase()===s || n.toLowerCase().includes(s));
-    if(hit) navigateTo(hit); else notify('Location not found.');
-  });
-  $('#clearSearch').onclick = ()=>{ q.value=''; clearRoute(); };
-
-  load();
-</script>
+      loadData();
+    })();
+  </script>
 </body>
 </html>
