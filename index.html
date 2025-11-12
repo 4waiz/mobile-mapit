@@ -43,16 +43,44 @@
     .top-bar { top: 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
     .logo-container { grid-column: 1; justify-self: start; }
     .logo-container img { height: 44px; width: auto; display: block; }
-    .search-wrapper { grid-column: 2; width: 100%; max-width: 400px; }
+    .search-wrapper { grid-column: 2; width: 100%; max-width: 400px; position: relative; }
     .search-bar { background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; margin: 0 auto;} .search-bar i { color: #888; margin-right: 12px; } .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
     .created-by { grid-column: 3; justify-self: end; font-size: 15px; color: white; text-decoration: none; text-shadow: 0 0 8px rgba(255, 255, 255, 0.7); }
     .side-controls { position: absolute; left: 16px; bottom: 120px; z-index: 10; display: flex; flex-direction: row; gap: 10px; } body.dev-mode .side-controls { display: none; }
     .dev-mode-btn { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; font-size: 18px; }
     .bottom-bar { bottom: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px 20px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); } body.dev-mode .bottom-bar { display: none; } .category-filters { display: flex; justify-content: space-around; gap: 8px;} .category-item { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; flex-grow: 1; cursor: pointer; padding: 6px; border-radius: 8px;} .category-item.active, .category-item:hover { background-color: #f0f0f0; }
-    .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;} .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;} .icon.walk { background-color: #e8e8e8; color: #333; } .icon.offices { background-color: #dcfce7; color: #16a34a; } .icon.training { background-color: #ffedd5; color: #9a3412; } .icon.services { background-color: #f3f4f6; color: #b27dd1; }
+    .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;} .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;} .icon.walk { background-color: #e8e8e8; color: #333; } .icon.offices { background-color: #dcfce7; color: #16a34a; } .icon.training { background-color: #ffedd5; color: #9a3412; } .icon.services { background-color: #c20bb3; color: #fffcff; }
     #routeBg { stroke: #a09898; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round;} #route { stroke: #ffffff; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 10; animation: dash 3s linear infinite; } @keyframes dash { to { stroke-dashoffset: -180; } }
     #draft{stroke:#9aa9be;stroke-dasharray:6 6;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round} #arrow { filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); } #arrow .head { fill: var(--primary-blue); stroke: white; stroke-width: 1.5; } #arrow .tail { fill: var(--primary-blue); opacity: .95; }
     #pins text { fill: #000; font-size: 15px; font-weight: 600; paint-order: stroke; stroke: white; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* --------- Autocomplete dropdown --------- */
+    .suggestions{
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 52px;
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+      overflow: hidden;
+      display: none;
+      z-index: 20;
+    }
+    .suggestion-item{
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .suggestion-item:hover, .suggestion-item.active{ background:#f5f7fb; }
+    .suggestion-empty{ padding: 10px 14px; color:#777; font-size: 13px; }
+
     @media (max-width: 700px) {
       .top-bar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
       .logo-container { order: 1; }
@@ -75,25 +103,42 @@
 
     <main class="map-container">
       <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <image id="bg" href="image.png" x="0" y="0" width="100" height="100" /><g id="pins"></g><path id="routeBg" d=""></path><path id="route" d=""></path><path id="draft" d=""></path>
+          <image id="bg" href="image.png" x="0" y="0" width="100" height="100" />
+          <g id="pins"></g>
+          <path id="routeBg" d=""></path>
+          <path id="route" d=""></path>
+          <path id="draft" d=""></path>
           <!-- Arrow head removed below -->
           <g id="arrow" transform="translate(-5,-5)"><path class="tail" d="M-0,-0 L-0,0 L-0,0 Z" /></g>
       </svg>
       <div class="ui-overlay top-bar">
         <div class="logo-container"><img src="logo.png" alt="Logo"></div>
-        <div class="search-wrapper"><div class="search-bar"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="searchInput" placeholder="Search"></div></div>
+        <div class="search-wrapper">
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search">
+          </div>
+          <!-- Autocomplete dropdown -->
+          <div id="suggestions" class="suggestions"></div>
+        </div>
         <a href="https://awaizahmed.com" target="_blank" class="created-by">Created by Awaiz Ahmed</a>
       </div>
       <div class="side-controls">
         <div class="dev-mode-btn" id="goDevMode"><i class="fa-solid fa-screwdriver-wrench"></i></div>
         <div class="dev-mode-btn" id="rotateMap"><i class="fa-solid fa-rotate"></i></div>
       </div>
-      <div class="ui-overlay bottom-bar"><div class="category-filters" id="category-filters"><div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div><div class="category-item" data-category="offices"><span class="icon offices"><i class="fa-solid fa-building"></i></span><span>Offices</span></div><div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div><div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Services</span></div></div></div>
+      <div class="ui-overlay bottom-bar">
+        <div class="category-filters" id="category-filters">
+          <div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div>
+          <div class="category-item" data-category="offices"><span class="icon offices"><i class="fa-solid fa-building"></i></span><span>Offices</span></div>
+          <div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div>
+          <div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Services</span></div>
+        </div>
+      </div>
     </main>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <!-- Firebase scripts removed -->
   <script>
     (function(){
       const canvas = document.getElementById('mesh'); if(!canvas) return; const ctx = canvas.getContext('2d');
@@ -126,11 +171,7 @@
     })();
 
     (function(){
-      const firebaseConfig = {
-        apiKey: "AIzaSyBtDzDtuoZ6iN-hcE22_iFJKd6rzor8Mc", authDomain: "mobilemapitproject.firebaseapp.com", projectId: "mobilemapitproject",
-        storageBucket: "mobilemapitproject.firebaseastorage.app", messagingSenderId: "478246668451", appId: "1:478246668451:web:0bc300699bbd7168dd9716"
-      };
-      firebase.initializeApp(firebaseConfig); const db = firebase.firestore(); const mapDocRef = db.collection("maps").doc("main-map-data");
+      // Firebase config and initialization removed
 
       const $=q=>document.querySelector(q);
       const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft'), searchInput=$('#searchInput');
@@ -138,25 +179,49 @@
       const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
       const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
       const rotateMapBtn = $('#rotateMap');
+      const suggestionsEl = document.getElementById('suggestions');
 
       let ROUTES={}, MARKERS={}, YOU_POS=null;
       let mode='user', placing=null, drawing=false, points=[], anim=null, devUnlocked=false, rotation = 0;
+      
+      const LOCAL_STORAGE_KEY = 'wayfindingMapData';
 
-      function loadData() {
-        mapDocRef.onSnapshot(doc => {
-          if (doc.exists) {
-            const data = doc.data();
-            ROUTES = data.routes || {}; MARKERS = data.markers || {}; YOU_POS = data.you || null;
-            renderPins(document.querySelector('.category-item.active')?.dataset.category || 'all');
-            fillSelects();
+      // --- START: Local Storage Functions ---
+      function loadDataFromLocal() {
+          const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (storedData) {
+              const data = JSON.parse(storedData);
+              ROUTES = data.routes || {};
+              MARKERS = data.markers || {};
+              YOU_POS = data.you || null;
+              renderPins();
+              fillSelects();
+          } else {
+              // Fallback to loading from the JSON file if local storage is empty
+              fetch('wayfinding-data.json')
+                  .then(response => response.json())
+                  .then(data => {
+                      ROUTES = data.routes || {};
+                      MARKERS = data.markers || {};
+                      YOU_POS = data.you || null;
+                      renderPins();
+                      fillSelects();
+                      saveDataToLocal(); // Save the initial data to local storage
+                      console.log("Loaded initial data from wayfinding-data.json");
+                  })
+                  .catch(error => console.error("Error loading initial data:", error));
           }
-        }, error => console.error("Error listening to map data:", error));
       }
 
-      function saveDataToFirebase() {
-        if (mode !== 'dev' || !devUnlocked) return;
-        mapDocRef.set({ markers: MARKERS, routes: ROUTES, you: YOU_POS }, { merge: true }).catch(error => console.error("Error saving to Firebase:", error));
+      function saveDataToLocal() {
+          const dataToSave = {
+              markers: MARKERS,
+              routes: ROUTES,
+              you: YOU_POS
+          };
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
       }
+      // --- END: Local Storage Functions ---
 
       function setMode(newMode) {
         if (newMode === 'dev' && !devUnlocked) {
@@ -173,29 +238,26 @@
             svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
             bg.setAttribute('width',W);
             bg.setAttribute('height',H);
-            renderPins();
             
+            // Panzoom logic remains the same
             const panzoomScript = document.createElement('script');
             panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
             panzoomScript.onload = () => {
                 const container = svg.parentElement;
                 if (!container) return;
-
                 const containerWidth = container.clientWidth;
                 const containerHeight = container.clientHeight;
-                
                 const scaleX = containerWidth / W;
                 const scaleY = containerHeight / H;
                 const startScale = Math.min(scaleX, scaleY);
-
                 Panzoom(svg, {
-                    maxScale: 15, // Increased max zoom for more detail
-                    minScale: 0.3, // Allow zooming out further
-                    startScale: startScale, // Start zoomed to fit the whole map
-                    // No 'contain' property for maximum panning freedom
+                    maxScale: 15, minScale: 0.3, startScale: startScale,
                 });
             };
             document.body.appendChild(panzoomScript);
+
+            // Load data after image dimensions are set
+            loadDataFromLocal();
         };
         img.src=bg.getAttribute('href');
       }
@@ -235,19 +297,14 @@
           function step(ts) {
               if (anim === null) return;
               if (!t0) t0 = ts; const dlen = ((ts - t0) % dur) / dur * L;
-              
               const current_pos = path.getPointAtLength(dlen);
               const ahead_pos = path.getPointAtLength(Math.min(dlen + 5, L));
               const matrix = path.getScreenCTM();
-              
               const p1 = svg.createSVGPoint(); p1.x = current_pos.x; p1.y = current_pos.y;
               const p2 = svg.createSVGPoint(); p2.x = ahead_pos.x; p2.y = ahead_pos.y;
-              
               const final_p1 = p1.matrixTransform(matrix);
               const final_p2 = p2.matrixTransform(matrix);
-              
               const angle = Math.atan2(final_p2.y - final_p1.y, final_p2.x - final_p1.x) * 180 / Math.PI;
-
               arrow.setAttribute('transform', `translate(${final_p1.x},${final_p1.y}) rotate(${angle})`);
               anim = requestAnimationFrame(step);
           }
@@ -255,7 +312,7 @@
           anim = requestAnimationFrame(step);
       }
       
-      const navigateTo = name => { if (!YOU_POS) return; showRoute('YOU', name); searchInput.value = name; };
+      const navigateTo = name => { if (!YOU_POS) return; showRoute('YOU', name); searchInput.value = name; hideSuggestions(); };
       const addOpt = (el, val, txt) => { const o = document.createElement('option'); o.value = val; o.textContent = txt; el.appendChild(o); };
       function fillSelects() { if (!fromSel || !toSel) return; fromSel.innerHTML = ''; toSel.innerHTML = ''; addOpt(fromSel, 'YOU', 'You are here'); Object.keys(MARKERS).sort().forEach(n => { addOpt(fromSel, n, n); addOpt(toSel, n, n); }); }
 
@@ -263,10 +320,10 @@
       addPointBtn.addEventListener('click', () => { placing = 'point'; }); setHereBtn.addEventListener('click', () => { placing = 'here'; });
       btnDraw.addEventListener('click', () => { if (!toSel.value) return alert('Choose a destination.'); drawing = true; points = []; btnUndo.disabled = false; btnSave.disabled = false; draft.setAttribute('d', ''); });
       btnUndo.addEventListener('click', () => { if (!drawing || !points.length) return; points.pop(); draft.setAttribute('d', drawPathD(points)); });
-      btnSave.addEventListener('click', () => { if (!drawing || !points.length) return; const from = fromSel.value || 'YOU', to = toSel.value; ROUTES[keyFor(from, to)] = points.slice(); saveDataToFirebase(); drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; showRoute(from, to); });
-      btnDelete.addEventListener('click', () => { const from = fromSel.value || 'YOU', to = toSel.value; if (!to) return alert('Select a route to delete.'); const k = keyFor(from, to); if (ROUTES[k] && confirm(`Delete route: ${from} to ${to}?`)) { delete ROUTES[k]; saveDataToFirebase(); clearRoute(); } });
+      btnSave.addEventListener('click', () => { if (!drawing || !points.length) return; const from = fromSel.value || 'YOU', to = toSel.value; ROUTES[keyFor(from, to)] = points.slice(); saveDataToLocal(); drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; showRoute(from, to); });
+      btnDelete.addEventListener('click', () => { const from = fromSel.value || 'YOU', to = toSel.value; if (!to) return alert('Select a route to delete.'); const k = keyFor(from, to); if (ROUTES[k] && confirm(`Delete route: ${from} to ${to}?`)) { delete ROUTES[k]; saveDataToLocal(); clearRoute(); } });
       btnExport.addEventListener('click', () => { const dataStr = JSON.stringify({ markers: MARKERS, you: YOU_POS, routes: ROUTES }, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'wayfinding-data.json'; a.click(); URL.revokeObjectURL(url); });
-      importFile.addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(text => { const data = JSON.parse(text); MARKERS = data.markers || {}; YOU_POS = data.you || null; ROUTES = data.routes || {}; saveDataToFirebase(); renderPins(); }).catch(err => alert('Invalid JSON.')); importFile.value = ''; });
+      importFile.addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(text => { const data = JSON.parse(text); MARKERS = data.markers || {}; YOU_POS = data.you || null; ROUTES = data.routes || {}; saveDataToLocal(); renderPins(); fillSelects(); }).catch(err => alert('Invalid JSON.')); importFile.value = ''; });
       
       const svgPoint = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
       svg.addEventListener('click', e => {
@@ -277,9 +334,10 @@
                   if (name && name.trim()) {
                       const cat = prompt('Category: (offices, training, services)', 'general');
                       MARKERS[name.trim()] = { x: Math.round(p.x), y: Math.round(p.y), category: cat ? cat.trim().toLowerCase() : 'general' };
-                      saveDataToFirebase();
+                      saveDataToLocal();
+                      renderPins(); fillSelects();
                   }
-              } else if (placing === 'here') { YOU_POS = { x: Math.round(p.x), y: Math.round(p.y) }; saveDataToFirebase(); }
+              } else if (placing === 'here') { YOU_POS = { x: Math.round(p.x), y: Math.round(p.y) }; saveDataToLocal(); renderPins(); }
               placing = null;
           } else if (drawing) { points.push({ x: Math.round(p.x), y: Math.round(p.y) }); draft.setAttribute('d', drawPathD(points)); }
       });
@@ -287,18 +345,118 @@
       $('#category-filters').addEventListener('click', e => { const item = e.target.closest('.category-item'); if (!item) return; $('#category-filters .active').classList.remove('active'); item.classList.add('active'); clearRoute(); renderPins(item.dataset.category); });
       rotateMapBtn.addEventListener('click', () => { rotation = (rotation + 90) % 360; renderPins(); const currentRoute = route.getAttribute('d'); if(currentRoute) { animateAlong(route) } });
       
-      searchInput.addEventListener('keydown', e => {
-          if (e.key === 'Enter') {
-              const query = searchInput.value.trim().toLowerCase();
-              if (!query) { clearRoute(); return; }
-              const matchedKey = Object.keys(MARKERS).find(key => key.trim().toLowerCase() === query);
-              if (matchedKey) { navigateTo(matchedKey); } else { alert('Location not found.'); }
-          }
+      // ---------------- Quick keyword + autocomplete ----------------
+      // Normalizes strings: lowercases, removes spaces/apostrophes
+      const normalize = s => (s || '')
+        .toLowerCase()
+        .replace(/['’`]/g, '')
+        .replace(/\s+/g, '');
+
+      // Initials key: "Training Room 1" -> "tr1", "EDGE Digital Factory" -> "edf"
+      const initialsKey = name => name
+        .split(/\s+/)
+        .map(w => w[0])
+        .join('')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g,'');
+
+      function findMatches(q){
+        if(!q) return [];
+        const qn = normalize(q);
+        const results = [];
+        for(const name of Object.keys(MARKERS || {})){
+          const nName = normalize(name);
+          const nInit = initialsKey(name);
+          let score = -1;
+
+          if(nName.startsWith(qn)) score = 100 - (nName.length - qn.length);           // strong: prefix on full name
+          else if(nInit.startsWith(qn)) score = 70 - (nInit.length - qn.length);       // strong: prefix on initials
+          else if(nName.includes(qn)) score = 40 - nName.indexOf(qn);                  // soft: substring
+
+          if(score >= 0) results.push({ name, score });
+        }
+        results.sort((a,b)=>b.score - a.score || a.name.localeCompare(b.name));
+        return results.slice(0, 8); // cap list
+      }
+
+      function renderSuggestions(list){
+        if(!list.length){
+          suggestionsEl.innerHTML = '<div class="suggestion-empty">No matches</div>';
+          suggestionsEl.style.display = 'block';
+          return;
+        }
+        suggestionsEl.innerHTML = list.map((x,i)=>`
+          <div class="suggestion-item ${i===0?'active':''}" data-name="${x.name.replace(/"/g,'&quot;')}">
+            <i class="fa-solid fa-location-dot"></i> <span>${x.name}</span>
+          </div>
+        `).join('');
+        suggestionsEl.style.display = 'block';
+      }
+
+      function hideSuggestions(){ suggestionsEl.style.display = 'none'; suggestionsEl.innerHTML = ''; }
+      function getActiveItem(){ return suggestionsEl.querySelector('.suggestion-item.active'); }
+      function setActiveByIndex(idx){
+        const items = Array.from(suggestionsEl.querySelectorAll('.suggestion-item'));
+        items.forEach(el=>el.classList.remove('active'));
+        if(items[idx]) items[idx].classList.add('active');
+      }
+
+      // Live input: show suggestions
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim();
+        clearRoute();
+        if(!q){ hideSuggestions(); return; }
+        const matches = findMatches(q);
+        renderSuggestions(matches);
       });
-      searchInput.addEventListener('input', () => { if (searchInput.value.trim() === '') clearRoute(); });
-      
+
+      // Keyboard navigation + quick enter
+      searchInput.addEventListener('keydown', e => {
+        const visible = suggestionsEl.style.display === 'block';
+        if(e.key === 'Escape'){ hideSuggestions(); return; }
+
+        // Enter: navigate to first/active match
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          const q = searchInput.value.trim();
+          if(!q){ clearRoute(); hideSuggestions(); return; }
+          const active = getActiveItem();
+          if(active){
+            navigateTo(active.dataset.name);
+          } else {
+            const matches = findMatches(q);
+            if(matches.length){ navigateTo(matches[0].name); } else { alert('Location not found.'); }
+          }
+          return;
+        }
+
+        if(visible && (e.key === 'ArrowDown' || e.key === 'ArrowUp')){
+          const items = Array.from(suggestionsEl.querySelectorAll('.suggestion-item'));
+          if(!items.length) return;
+          const current = getActiveItem();
+          let idx = current ? items.indexOf(current) : -1;
+          if(e.key === 'ArrowDown') idx = (idx + 1) % items.length;
+          else idx = (idx - 1 + items.length) % items.length;
+          setActiveByIndex(idx);
+          e.preventDefault();
+        }
+      });
+
+      // Click on a suggestion
+      suggestionsEl.addEventListener('click', e => {
+        const item = e.target.closest('.suggestion-item');
+        if(!item) return;
+        navigateTo(item.dataset.name);
+      });
+
+      // Click outside to close suggestions
+      document.addEventListener('click', e => {
+        const inside = e.target.closest('.search-wrapper');
+        if(!inside) hideSuggestions();
+      });
+
       fitToImage();
-      loadData();
+      // loadDataFromLocal() is called inside fitToImage after dimensions are known
     })();
   </script>
 </body>
