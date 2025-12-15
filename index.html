@@ -273,7 +273,9 @@
             const scaleX = container.clientWidth / W;
             const scaleY = container.clientHeight / H;
             const startScale = Math.min(scaleX, scaleY);
-            Panzoom(svg, { maxScale: 15, minScale: 0.3, startScale });
+            const panzoom = Panzoom(svg, { maxScale: 15, minScale: 0.3, startScale });
+            // Enable mouse wheel zoom on PC
+            container.addEventListener('wheel', panzoom.zoomWithWheel);
           };
           document.body.appendChild(panzoomScript);
 
