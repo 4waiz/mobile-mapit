@@ -166,6 +166,19 @@
       width:auto;
       filter: drop-shadow(0 10px 22px rgba(0,0,0,.25));
     }
+    .credit{
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      color: rgba(255,255,255,0.8);
+      font-size: 12px;
+      text-decoration: none;
+      text-shadow: 0 0 10px rgba(255,255,255,0.6), 0 0 20px rgba(255,255,255,0.4);
+    }
+    .credit:hover{
+      color: #fff;
+      text-shadow: 0 0 15px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.5);
+    }
 
     .searchWrap{ width:100%; max-width:520px; position:relative; }
     .searchBox{
@@ -250,6 +263,30 @@
     .fab:active{ transform: scale(.94); }
     .fab.primary{ background: rgba(59,130,246,.92); color:#fff; }
     .fab.danger{ background: rgba(239,68,68,.92); color:#fff; }
+
+    /* Legend */
+    .legend{
+      background: rgba(255,255,255,.92);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      font-size: 12px;
+      color: #0f172a;
+      box-shadow: var(--shadowSoft);
+    }
+    .legend-item{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
 
     /* Route card */
     .routeCard{
@@ -475,6 +512,7 @@
 
   <!-- UI -->
   <div class="ui">
+    <a href="https://awaizahmed.com" target="_blank" class="credit">Created by Awaiz Ahmed</a>
     <div class="topbar">
       <!-- Keep logo as-is -->
       <img src="logo.png" alt="MapIt Pro" class="logo">
@@ -510,6 +548,12 @@
           <div class="fab" id="rotateBtn" title="Rotate"><i class="fa-solid fa-rotate-right"></i></div>
           <div class="fab" id="resetBtn" title="Reset"><i class="fa-solid fa-compress"></i></div>
         </div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span> - Offices</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> - Training</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#a855f7"></span> - Services</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span> - Exit</div>
+        </div>
         <div class="controls">
           <div class="fab" id="adminBtn" title="Admin"><i class="fa-solid fa-gear"></i></div>
         </div>
@@ -535,9 +579,6 @@
           <button class="btn active" id="modeView">View</button>
           <button class="btn" id="modeNetwork">Path Network</button>
           <button class="btn" id="modePins">Locations</button>
-        </div>
-        <div class="btnRow" style="margin-bottom:10px;">
-          <button class="btn" id="networkUndoBtn">Undo network change</button>
         </div>
         <div class="hint">
           <b>Path Network:</b> tap map to add nodes, tap Node A then Node B to link, drag nodes to adjust.<br>
@@ -695,7 +736,6 @@
         kioskId: null,
         points: [] // [{x,y}]
       },
-      networkHistory: [],
 
       // runtime
       panzoom: null,
@@ -724,7 +764,6 @@
     const youLabel = $('youLabel');
     const startMarker = $('startMarker');
     const endMarker = $('endMarker');
-    const offsetHud = $('offsetHud');
 
     // UI
     const routeCard = $('routeCard');
@@ -736,7 +775,6 @@
     const adminPanel = $('adminPanel');
     const selectionCard = $('selectionCard');
     const selectionInfo = $('selectionInfo');
-    const networkUndoBtn = $('networkUndoBtn');
 
     const routeLocationSelect = $('routeLocationSelect');
     const routeInfo = $('routeInfo');
@@ -899,9 +937,6 @@
         STATE.kioskMap[STATE.activeKioskId] = null;
       }
 
-      STATE.networkHistory = [];
-      updateNetworkUndoBtn();
-
       $('kioskIdInput').value = STATE.activeKioskId;
       syncKioskOptions();
       updateKioskLabel();
@@ -953,8 +988,6 @@
 
     function applyRotation(){
       rotateRoot.setAttribute('transform', `rotate(${STATE.rotation} ${MAP.center.x} ${MAP.center.y})`);
-      // Re-render pins to recalculate label positions for new rotation
-      renderPins();
       // Counter-rotate labels (keep upright in screen space)
       refreshCounterRotation();
       // Update kiosk marker position
@@ -964,12 +997,11 @@
     }
 
     function refreshCounterRotation(){
-      // Any element with data-upright-y will be rotated around (x, y) to stay upright
+      // Any element with data-upright-y will be rotated around (0, y)
       const labels = rotateRoot.querySelectorAll('[data-upright-y]');
       labels.forEach(el => {
-        const x = Number(el.getAttribute('data-upright-x') || 0);
         const y = Number(el.getAttribute('data-upright-y') || 0);
-        el.setAttribute('transform', `rotate(${-STATE.rotation} ${x} ${y})`);
+        el.setAttribute('transform', `rotate(${-STATE.rotation} 0 ${y})`);
       });
     }
 
@@ -1071,99 +1103,43 @@
     function renderPins(){
       layers.pins.innerHTML = '';
 
-      // Transform map coords to screen coords based on rotation
-      const rad = STATE.rotation * Math.PI / 180;
-      const cos = Math.cos(rad), sin = Math.sin(rad);
-      const cx = MAP.center.x, cy = MAP.center.y;
-      function toScreen(x, y) {
-        return {
-          x: cx + (x - cx) * cos - (y - cy) * sin,
-          y: cy + (x - cx) * sin + (y - cy) * cos
-        };
-      }
-
-      // simple overlap avoidance: process top-to-bottom in screen space
-      const locsWithScreen = STATE.locations.map(loc => {
-        const s = toScreen(loc.x, loc.y);
-        return { ...loc, screenX: s.x, screenY: s.y };
-      });
-      locsWithScreen.sort((a,b) => a.screenY - b.screenY || a.screenX - b.screenX);
+      // simple overlap avoidance: process top-to-bottom to stagger labels
+      const locs = [...STATE.locations].sort((a,b) => a.y - b.y || a.x - b.x);
       const labelBoxes = [];
 
-      // Include "You Are Here" marker in overlap detection (in screen coords)
-      const kioskPos = getActiveKioskPos();
-      if(kioskPos && Number.isFinite(kioskPos.x) && Number.isFinite(kioskPos.y)){
-        // Label is at y=-26 relative to marker, so map position is (x, y-26)
-        const youTextScreen = toScreen(kioskPos.x, kioskPos.y - 26);
-        const youLabelWidth = 120; // "You Are Here" text width estimate
-        const youPad = 20; // extra padding around You Are Here
-        labelBoxes.push({
-          left: youTextScreen.x - youLabelWidth/2 - youPad,
-          right: youTextScreen.x + youLabelWidth/2 + youPad,
-          top: youTextScreen.y - 20,
-          bottom: youTextScreen.y + 16
-        });
-      }
-
-      for(const loc of locsWithScreen){
+      for(const loc of locs){
         const g = createSVG('g', { class: 'pin-group', transform: `translate(${loc.x}, ${loc.y})` });
         if(STATE.selectedLocationId === loc.id && STATE.mode === 'pins') g.classList.add('pin-selected');
 
         const dot = createSVG('circle', { cx:0, cy:0, r:8, class:'pin-dot', fill: catColor(loc.category) });
 
-        // Estimate label box and shift down if overlapping previous labels (in screen coords)
-        const catText = prettyCat(loc.category);
-        const labelWidth = Math.max(loc.name.length * 8 + 20, catText.length * 8 + 20, 80); // account for both name and category
-        const labelHeight = 18; // single line height with more padding
-        const pad = 10; // increased padding
-        const subOffset = 18; // gap between name and category text
-
-        // To move "down" in screen space, we need to shift in direction (sin(θ), cos(θ)) in map coords
-        // This ensures labels move down on screen regardless of map rotation
-        const shiftDirX = sin;
-        const shiftDirY = cos;
-
-        let shiftAmount = 26; // base offset from pin
+        // Estimate label box and shift down if overlapping previous labels
+        const labelWidth = Math.max(loc.name.length * 7 + 12, 70); // rough width estimate
+        const labelHeight = 32; // combined name + sub
+        let shift = 26; // base y for name
+        const pad = 4;
         let attempts = 0;
-        while(attempts < 10){
-          // Calculate label position: start from pin, move in screen-down direction
-          const labelMapX = loc.x + shiftDirX * shiftAmount;
-          const labelMapY = loc.y + shiftDirY * shiftAmount;
-          const textScreen = toScreen(labelMapX, labelMapY);
-          const top = textScreen.y - labelHeight - pad;
-          const bottom = textScreen.y + subOffset + labelHeight + pad;
-          const left = textScreen.x - labelWidth/2 - pad;
-          const right = textScreen.x + labelWidth/2 + pad;
+        while(attempts < 8){
+          const top = loc.y + shift - labelHeight;
+          const bottom = loc.y + shift + pad;
+          const left = loc.x - labelWidth/2;
+          const right = loc.x + labelWidth/2;
           const overlap = labelBoxes.some(b => !(right < b.left || left > b.right || bottom < b.top || top > b.bottom));
           if(!overlap) {
             labelBoxes.push({ left, right, top, bottom });
             break;
           }
-          shiftAmount += subOffset + labelHeight * 2 + pad * 3; // shift by full box height in screen space
+          shift += labelHeight + pad;
           attempts++;
         }
 
-        // Calculate final label offset in map coordinates (relative to pin group origin)
-        const labelOffsetX = shiftDirX * shiftAmount;
-        const labelOffsetY = shiftDirY * shiftAmount;
-
-        // Name + category, kept upright via counter-rotation
-        const nameText = createSVG('text', { x: labelOffsetX, y: labelOffsetY, class:'pin-label' });
+        // Name label, kept upright
+        const nameText = createSVG('text', { y: shift, class:'pin-label' });
         nameText.textContent = loc.name;
-        nameText.setAttribute('data-upright-x', String(labelOffsetX));
-        nameText.setAttribute('data-upright-y', String(labelOffsetY));
-        nameText.setAttribute('transform', `rotate(${-STATE.rotation} ${labelOffsetX} ${labelOffsetY})`);
+        nameText.setAttribute('data-upright-y', String(shift));
+        nameText.setAttribute('transform', `rotate(${-STATE.rotation} 0 ${shift})`);
 
-        // Category text is 16 screen-pixels below the name
-        const subOffsetX = labelOffsetX + shiftDirX * 16;
-        const subOffsetY = labelOffsetY + shiftDirY * 16;
-        const subText = createSVG('text', { x: subOffsetX, y: subOffsetY, class:'pin-sub' });
-        subText.textContent = catText;
-        subText.setAttribute('data-upright-x', String(subOffsetX));
-        subText.setAttribute('data-upright-y', String(subOffsetY));
-        subText.setAttribute('transform', `rotate(${-STATE.rotation} ${subOffsetX} ${subOffsetY})`);
-
-        g.append(dot, nameText, subText);
+        g.append(dot, nameText);
 
         // Click behavior
         g.addEventListener('click', (e) => {
@@ -1339,7 +1315,6 @@
           }
         }
         STATE.nodes.push(newNode);
-        pushNetworkHistory({ type:'addNode', node: { ...newNode } });
         STATE.selectedNodeId = newNode.id;
         setSelectedLocation(null);
         updateSelectionCard();
@@ -1364,11 +1339,8 @@
         const a = getNode(STATE.selectedNodeId);
         const b = node;
         if(a && b){
-          if(!a.links.includes(b.id) || !b.links.includes(a.id)){
-            if(!a.links.includes(b.id)) a.links.push(b.id);
-            if(!b.links.includes(a.id)) b.links.push(a.id);
-            pushNetworkHistory({ type:'addLink', a: a.id, b: b.id });
-          }
+          if(!a.links.includes(b.id)) a.links.push(b.id);
+          if(!b.links.includes(a.id)) b.links.push(a.id);
         }
         STATE.selectedNodeId = nodeId;
       } else {
@@ -1410,50 +1382,6 @@
         selectionCard.style.display = 'none';
         selectionInfo.textContent = '';
       }
-    }
-
-    function updateNetworkUndoBtn(){
-      if(!networkUndoBtn) return;
-      const enabled = (STATE.mode === 'network' && STATE.networkHistory.length > 0);
-      networkUndoBtn.disabled = !enabled;
-      networkUndoBtn.style.opacity = enabled ? '1' : '0.5';
-      networkUndoBtn.style.cursor = enabled ? 'pointer' : 'not-allowed';
-    }
-
-    function pushNetworkHistory(action){
-      STATE.networkHistory.push(action);
-      updateNetworkUndoBtn();
-    }
-
-    function undoNetwork(){
-      if(STATE.mode !== 'network' || !STATE.networkHistory.length) return;
-      const act = STATE.networkHistory.pop();
-      if(!act) return;
-
-      if(act.type === 'addNode'){
-        const id = act.node?.id;
-        if(id == null) return;
-        // remove node and links
-        STATE.nodes = STATE.nodes.filter(n => n.id !== id);
-        STATE.nodes.forEach(n => n.links = (n.links || []).filter(l => l !== id));
-        // re-snap locations/kiosks
-        STATE.locations = STATE.locations.map(loc => ({ ...loc, nodeId: STATE.nodes.length ? findNearestNode(loc.x, loc.y) : null }));
-        Object.keys(STATE.kioskMap).forEach(kid => {
-          const k = STATE.kioskMap[kid];
-          if(k) k.nodeId = STATE.nodes.length ? findNearestNode(k.x, k.y) : null;
-        });
-        STATE.selectedNodeId = null;
-      } else if(act.type === 'addLink'){
-        const { a, b } = act;
-        const na = getNode(a), nb = getNode(b);
-        if(na && nb){
-          na.links = (na.links || []).filter(x => x !== b);
-          nb.links = (nb.links || []).filter(x => x !== a);
-        }
-      }
-      updateNetworkUndoBtn();
-      render();
-      toast('Undid network change.');
     }
 
     $('deleteSelectedBtn').onclick = () => {
@@ -2081,8 +2009,6 @@
       $('modeNetwork').classList.toggle('active', m === 'network');
       $('modePins').classList.toggle('active', m === 'pins');
 
-      updateNetworkUndoBtn();
-
       // Stop route edit if leaving pins/admin context
       if(m !== 'pins' && STATE.routeEdit.active){
         stopRouteEdit(false);
@@ -2094,9 +2020,6 @@
     $('modeView').onclick = () => setMode('view');
     $('modeNetwork').onclick = () => setMode('network');
     $('modePins').onclick = () => setMode('pins');
-    if(networkUndoBtn){
-      networkUndoBtn.onclick = () => undoNetwork();
-    }
 
     // --- ROTATE ---
     $('rotateBtn').onclick = () => {
@@ -2194,7 +2117,6 @@
           STATE.nextNodeId = migrated.nextNodeId || 1;
           STATE.kioskMap = migrated.kiosks || {};
           STATE.activeKioskId = migrated.activeKioskId || Object.keys(STATE.kioskMap)[0] || 'kiosk-1';
-          STATE.networkHistory = [];
 
           $('kioskIdInput').value = STATE.activeKioskId;
           syncKioskOptions();
@@ -2222,7 +2144,6 @@
       STATE.kioskMap = {};
       STATE.activeKioskId = 'kiosk-1';
       STATE.rotation = 0;
-      STATE.networkHistory = [];
       stopRouteEdit(true);
       clearRoute(true);
       applyRotation();
@@ -2353,7 +2274,6 @@
       fitMapToView(false);
       render();
       clearRoute(true);
-      updateNetworkUndoBtn();
       toast('Ready');
     });
 
