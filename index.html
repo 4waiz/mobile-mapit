@@ -1059,22 +1059,47 @@
     function renderPins(){
       layers.pins.innerHTML = '';
 
-      for(const loc of STATE.locations){
+      // simple overlap avoidance: process top-to-bottom to stagger labels
+      const locs = [...STATE.locations].sort((a,b) => a.y - b.y || a.x - b.x);
+      const labelBoxes = [];
+
+      for(const loc of locs){
         const g = createSVG('g', { class: 'pin-group', transform: `translate(${loc.x}, ${loc.y})` });
         if(STATE.selectedLocationId === loc.id && STATE.mode === 'pins') g.classList.add('pin-selected');
 
         const dot = createSVG('circle', { cx:0, cy:0, r:8, class:'pin-dot', fill: catColor(loc.category) });
 
-        // Name + category, kept upright
-        const nameText = createSVG('text', { y: 26, class:'pin-label' });
-        nameText.textContent = loc.name;
-        nameText.setAttribute('data-upright-y','26');
-        nameText.setAttribute('transform', `rotate(${-STATE.rotation} 0 26)`);
+        // Estimate label box and shift down if overlapping previous labels
+        const labelWidth = Math.max(loc.name.length * 7 + 12, 70); // rough width estimate
+        const labelHeight = 32; // combined name + sub
+        let shift = 26; // base y for name
+        const pad = 4;
+        let attempts = 0;
+        while(attempts < 8){
+          const top = loc.y + shift - labelHeight;
+          const bottom = loc.y + shift + pad;
+          const left = loc.x - labelWidth/2;
+          const right = loc.x + labelWidth/2;
+          const overlap = labelBoxes.some(b => !(right < b.left || left > b.right || bottom < b.top || top > b.bottom));
+          if(!overlap) {
+            labelBoxes.push({ left, right, top, bottom });
+            break;
+          }
+          shift += labelHeight + pad;
+          attempts++;
+        }
 
-        const subText = createSVG('text', { y: 42, class:'pin-sub' });
+        // Name + category, kept upright
+        const nameText = createSVG('text', { y: shift, class:'pin-label' });
+        nameText.textContent = loc.name;
+        nameText.setAttribute('data-upright-y', String(shift));
+        nameText.setAttribute('transform', `rotate(${-STATE.rotation} 0 ${shift})`);
+
+        const subY = shift + 16;
+        const subText = createSVG('text', { y: subY, class:'pin-sub' });
         subText.textContent = prettyCat(loc.category);
-        subText.setAttribute('data-upright-y','42');
-        subText.setAttribute('transform', `rotate(${-STATE.rotation} 0 42)`);
+        subText.setAttribute('data-upright-y', String(subY));
+        subText.setAttribute('transform', `rotate(${-STATE.rotation} 0 ${subY})`);
 
         g.append(dot, nameText, subText);
 
