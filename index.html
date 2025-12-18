@@ -2,544 +2,2286 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>Wayfinding Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1" />
+  <title>MapIt Pro</title>
+
+  <!-- Icons + Pan/Zoom -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+
   <style>
-    :root {
-      --panel: #ffffff; --border: #e0e0e0; --ink: #333333; --primary-blue: #4488d0; --dev-panel-bg: #81a9d0;
-      --nebula-start: #1c1d24; --nebula-mid-orange: #d6cac2;
-      --nebula-mid-grey: #a7aab1; --nebula-end: #3f4049;
+    :root{
+      --bg: #0b1020;
+      --bg2:#0f162b;
+      --glass: rgba(255,255,255,.84);
+      --glass2: rgba(255,255,255,.92);
+      --glassBorder: rgba(255,255,255,.22);
+      --text:#0f172a;
+      --muted:#64748b;
+      --primary:#3b82f6;
+      --primary2:#60a5fa;
+      --danger:#ff3b30;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --shadow: 0 16px 50px rgba(0,0,0,.28);
+      --shadowSoft: 0 10px 30px rgba(0,0,0,.18);
+      --radius: 18px;
+      --radius2: 22px;
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: conic-gradient(at 0% 50%,
-        var(--nebula-start) 0%, var(--nebula-mid-orange) 20%,
-        var(--nebula-start) 35%, var(--nebula-mid-grey) 65%,
-        var(--nebula-start) 80%, var(--nebula-end) 100%);
-      background-size: 200% 200%;
-      animation: panBackground 60s linear infinite alternate;
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html,body{ width:100%; height:100%; margin:0; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Helvetica,Arial,sans-serif; }
+
+    body{
+      background: radial-gradient(120% 120% at 15% 10%, rgba(96,165,250,.22), transparent 45%),
+                  radial-gradient(120% 120% at 85% 20%, rgba(168,85,247,.16), transparent 42%),
+                  radial-gradient(130% 120% at 50% 90%, rgba(34,197,94,.12), transparent 45%),
+                  linear-gradient(135deg, var(--bg) 0%, var(--bg2) 55%, #111a31 100%);
+      color: var(--text);
+      position:relative;
     }
-    @keyframes panBackground { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
-    .bg-mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-    #mesh { display: block; width: 100%; height: 100%; }
-    .app-container { display: flex; width: 100%; height: 100%; position: relative; z-index: 1; }
-    .dev-panel { width: 280px; background: var(--dev-panel-bg); border-right: 1px solid var(--border); padding: 12px; display: none; flex-direction: column; gap: 12px; overflow-y: auto; color: #333; }
-    body.dev-mode .dev-panel { display: flex; } .dev-panel h3 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; color: #666;}
-    .dev-panel .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
-    .dev-panel .vsep { height: 1px; background: var(--border); margin: 8px 0; }
-    .dev-panel .btn { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; width: 100%; }
-    .dev-panel .btn:hover { background: #f0f0f0; } .dev-panel .btn.primary { background: var(--primary-blue); color: white; border-color: var(--primary-blue); } .dev-panel .btn.danger { background: #fbecec; color: #dc2626; border-color: #f8d7da; }
-    .dev-panel .btn[disabled] { opacity: .5; cursor: not-allowed; }
-    .dev-panel label { font-size: 14px; margin-bottom: 4px; display: block; }
-    .dev-panel select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;}
-    .dev-panel .hidden { display: none; }
 
-    .map-container { width: 100%; height: 100%; position: relative; flex-grow: 1; overflow: hidden; min-width: 0; }
-    svg { width: 100%; height: 100%; background: transparent; touch-action: none; cursor: grab; }
-    svg:active { cursor: grabbing; }
+    /* Subtle animated mesh (kept futuristic, but minimal) */
+    .bg-mesh{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.45; }
+    #mesh{ width:100%; height:100%; display:block; }
 
-    .ui-overlay { position: absolute; z-index: 10; width: 100%; padding: 0 16px; pointer-events: none; }
-    .ui-overlay > * { pointer-events: auto; }
-    .top-bar { top: 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
-    .logo-container { grid-column: 1; justify-self: start; }
-    .logo-container img { height: 44px; width: auto; display: block; }
-    .search-wrapper { grid-column: 2; width: 100%; max-width: 400px; position: relative; }
-    .search-bar { background: var(--panel); border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 10px 16px; height: 44px; margin: 0 auto;}
-    .search-bar i { color: #888; margin-right: 12px; }
-    .search-bar input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent;}
+    /* MAP */
+    .viewport{ position:relative; width:100%; height:100%; z-index:1; overflow:hidden; }
+    svg{ width:100%; height:100%; touch-action:none; cursor:grab; }
+    svg:active{ cursor:grabbing; }
 
-    .created-by { grid-column: 3; justify-self: end; font-size: 15px; color: white; text-decoration: none; text-shadow: 0 0 8px rgba(255, 255, 255, 0.7); }
-    .side-controls { position: absolute; left: 16px; bottom: 120px; z-index: 10; display: flex; flex-direction: row; gap: 10px; }
-    body.dev-mode .side-controls { display: none; }
-    .dev-mode-btn { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; font-size: 18px; }
+    /* Admin visuals */
+    .node{ fill:#fff; stroke:#111827; stroke-width:1; r:6; opacity:0; transition:opacity .15s, r .15s; cursor:pointer; }
+    .edge{ stroke:#22c55e; stroke-width:3; opacity:0; stroke-linecap:round; pointer-events:none; }
 
-    .bottom-bar { bottom: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px 20px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); }
-    body.dev-mode .bottom-bar { display: none; }
-    .category-filters { display: flex; justify-content: space-around; gap: 8px;}
-    .category-item { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; flex-grow: 1; cursor: pointer; padding: 6px; border-radius: 8px;}
-    .category-item.active, .category-item:hover { background-color: #f0f0f0; }
-    .category-item .icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px;}
-    .category-item.active .icon { background-color: var(--primary-blue) !important; color: white !important;}
-    .icon.walk { background-color: #e8e8e8; color: #333; }
-    .icon.offices { background-color: #dcfce7; color: #16a34a; }
-    .icon.training { background-color: #ffedd5; color: #9a3412; }
-    .icon.services { background-color: #c20bb3; color: #fffcff; }
+    body.admin-mode .node{ opacity:.95; }
+    body.admin-mode .edge{ opacity:.55; }
+    body.admin-mode .node:hover{ fill:#fde047; r:8; }
+    body.admin-mode .node.selected{ fill:#22c55e; stroke:#052e16; stroke-width:2; r:9; }
 
-    #routeBg { stroke: #a09898; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round;}
-    #route { stroke: #ffffff; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 10; animation: dash 3s linear infinite; }
-    @keyframes dash { to { stroke-dashoffset: -180; } }
-    #draft{stroke:#9aa9be;stroke-dasharray:6 6;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
-    #arrow { filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); }
-    #arrow .head { fill: var(--primary-blue); stroke: white; stroke-width: 1.5; }
-    #arrow .tail { fill: var(--primary-blue); opacity: .95; }
+    /* Route path (user) */
+    #routePath{
+      fill:none;
+      stroke:url(#routeGradient);
+      stroke-width:10px;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+      stroke-dasharray: 18 12;
+      animation: dashFlow 1.15s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes dashFlow{ to { stroke-dashoffset:-30; } }
 
-    #pins text { fill: #000; font-size: 15px; font-weight: 600; paint-order: stroke; stroke: white; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+    /* Route path (admin manual editor preview) */
+    #editRoutePath{
+      fill:none;
+      stroke: rgba(34,197,94,.95);
+      stroke-width:8px;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      stroke-dasharray: 10 10;
+      opacity: .95;
+      pointer-events:none;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,.28));
+    }
+    .route-point{
+      fill:#22c55e;
+      stroke:#ffffff;
+      stroke-width:2;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+      cursor:grab;
+    }
+    .route-point:active{ cursor:grabbing; }
 
-    /* Autocomplete dropdown */
+    /* Pins */
+    .pin-group{ cursor:pointer; }
+    .pin-dot{ stroke: rgba(255,255,255,.9); stroke-width:2; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
+    .pin-label{
+      font-weight: 750;
+      font-size: 13px;
+      fill: #111827;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.92);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+    .pin-sub{
+      font-weight: 650;
+      font-size: 11px;
+      fill:#334155;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.9);
+      stroke-width: 3px;
+      stroke-linejoin: round;
+    }
+    .pin-selected .pin-dot{ stroke: rgba(255,255,255,1); stroke-width:3; }
+
+    /* You Are Here */
+    .you-marker circle.pulse{
+      fill: rgba(59,130,246,.28);
+      animation: pulse 2s infinite;
+    }
+    .you-marker circle.core{
+      fill: #3b82f6;
+      stroke: rgba(255,255,255,.95);
+      stroke-width: 3;
+    }
+    .you-marker text{
+      font-weight: 800;
+      font-size: 13px;
+      fill:#1d4ed8;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.95);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+    @keyframes pulse{ 0%{ r:10; opacity:1 } 100%{ r:42; opacity:0 } }
+
+    /* Start/End markers */
+    .endpoint{ filter: drop-shadow(0 6px 12px rgba(0,0,0,.25)); }
+    .endpoint .ring{ fill: rgba(255,255,255,.96); }
+    .endpoint .dot{ fill: #111827; opacity:.12; }
+    .endpoint.start .ring{ fill: rgba(59,130,246,.95); }
+    .endpoint.end .ring{ fill: rgba(34,197,94,.95); }
+    .endpoint text{ font-weight:800; font-size:12px; fill:#ffffff; text-anchor:middle; dominant-baseline:middle; }
+
+    /* UI Layer */
+    .ui{ position:absolute; inset:0; z-index:5; pointer-events:none; padding:18px; display:flex; flex-direction:column; justify-content:space-between; gap:14px; }
+    .ui > *{ pointer-events:auto; }
+
+    /* Top bar */
+    .topbar{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+    .logo{
+      height:56px;
+      width:auto;
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,.25));
+    }
+
+    .searchWrap{ width:100%; max-width:520px; position:relative; }
+    .searchBox{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      background: var(--glass);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--glassBorder);
+      box-shadow: var(--shadowSoft);
+    }
+    .searchBox i{ color: #475569; }
+    .searchBox input{
+      flex:1;
+      border:none;
+      outline:none;
+      background:transparent;
+      font-size:16px;
+      color: #0f172a;
+    }
+    .clearBtn{
+      width:34px; height:34px;
+      border-radius:999px;
+      display:grid; place-items:center;
+      background: rgba(15,23,42,.06);
+      color:#334155;
+      cursor:pointer;
+    }
+    .clearBtn:active{ transform: scale(.95); }
+
     .suggestions{
-      position: absolute; left: 50%; transform: translateX(-50%);
-      top: 52px; width: 100%; max-width: 400px;
-      background: #fff; border: 1px solid var(--border); border-radius: 12px;
-      box-shadow: 0 8px 18px rgba(0,0,0,.12);
-      overflow: hidden; display: none; z-index: 20;
+      position:absolute;
+      top: 56px;
+      left: 0;
+      right: 0;
+      background: var(--glass2);
+      border: 1px solid var(--glassBorder);
+      border-radius: 18px;
+      overflow:hidden;
+      box-shadow: var(--shadow);
+      display:none;
+      max-height: 46vh;
+      overflow-y:auto;
     }
-    .suggestion-item{ padding: 10px 14px; cursor: pointer; font-size: 14px; display: flex; gap: 8px; align-items: center; }
-    .suggestion-item:hover, .suggestion-item.active{ background:#f5f7fb; }
-    .suggestion-empty{ padding: 10px 14px; color:#777; font-size: 13px; }
+    .sItem{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding: 12px 14px;
+      cursor:pointer;
+      border-bottom: 1px solid rgba(15,23,42,.06);
+    }
+    .sItem:last-child{ border-bottom:none; }
+    .sItem:active{ background: rgba(15,23,42,.05); }
+    .sName{ font-weight:750; color:#0f172a; }
+    .sMeta{ font-size:12px; color: var(--muted); margin-top:2px; }
+    .sText{ display:flex; flex-direction:column; line-height:1.05; }
 
-    @media (max-width: 700px) {
-      .top-bar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
-      .logo-container { order: 1; }
-      .created-by { order: 2; font-size: 12px; }
-      .search-wrapper { order: 3; width: 100%; }
+    /* Bottom controls */
+    .bottombar{
+      width:100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+    }
+    .controls{ display:flex; gap:12px; align-items:center; }
+    .fab{
+      width:50px; height:50px;
+      border-radius: 999px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.22);
+      box-shadow: var(--shadowSoft);
+      color: #0f172a;
+      cursor:pointer;
+    }
+    .fab:active{ transform: scale(.94); }
+    .fab.primary{ background: rgba(59,130,246,.92); color:#fff; }
+    .fab.danger{ background: rgba(239,68,68,.92); color:#fff; }
+
+    /* Route card */
+    .routeCard{
+      width:100%;
+      max-width: 560px;
+      margin: 0 auto 10px auto;
+      background: var(--glass);
+      border: 1px solid var(--glassBorder);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .routeLeft{ display:flex; flex-direction:column; gap:3px; }
+    .routeTitle{ font-weight:850; font-size:14px; color:#0f172a; }
+    .routeSub{ font-size:12px; color: var(--muted); }
+    .routeActions{ display:flex; gap:10px; align-items:center; }
+    .pill{
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(15,23,42,.06);
+      border: 1px solid rgba(15,23,42,.08);
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      color:#0f172a;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .pill.primary{ background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.18); color:#1d4ed8; }
+    .pill:active{ transform: scale(.97); }
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom: 90px;
+      transform: translateX(-50%);
+      background: rgba(15,23,42,.92);
+      color: rgba(255,255,255,.96);
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-weight: 750;
+      font-size: 12px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      z-index: 50;
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .2s, transform .2s;
+    }
+    .toast.show{ opacity:1; transform: translateX(-50%) translateY(-4px); }
+
+    /* Admin panel */
+    .adminPanel{
+      position:absolute;
+      top:0; right:0;
+      width: 330px;
+      height:100%;
+      background: rgba(255,255,255,.96);
+      border-left: 1px solid rgba(15,23,42,.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transform: translateX(100%);
+      transition: transform .28s cubic-bezier(.2,.9,.2,1);
+      z-index: 40;
+      display:flex;
+      flex-direction:column;
+    }
+    .adminPanel.open{ transform: translateX(0); }
+    .adminHeader{
+      padding: 18px 18px 14px 18px;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-weight: 900;
+      color:#0f172a;
+    }
+    .adminBody{ padding: 16px 18px 22px 18px; overflow:auto; display:flex; flex-direction:column; gap:14px; }
+    .card{
+      background: #fff;
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .cardTitle{
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #64748b;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+    .btnRow{ display:flex; gap:10px; }
+    .btn{
+      width:100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(15,23,42,.12);
+      background: rgba(15,23,42,.04);
+      font-weight: 850;
+      cursor:pointer;
+      font-size: 13px;
+      color:#0f172a;
+    }
+    .btn:active{ transform: scale(.98); }
+    .btn.primary{ background: rgba(59,130,246,.92); color:#fff; border:none; }
+    .btn.danger{ background: rgba(239,68,68,.12); color:#b91c1c; border-color: rgba(239,68,68,.25); }
+    .btn.active{ background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.25); color:#1d4ed8; }
+    .hint{ font-size: 12px; color:#475569; line-height:1.25; }
+    .field{ display:flex; flex-direction:column; gap:6px; margin-bottom: 8px; }
+    .field label{ font-size: 12px; font-weight: 850; color:#334155; }
+    .field input, .field select{
+      width:100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(15,23,42,.14);
+      outline:none;
+      font-size: 13px;
+      background:#fff;
+    }
+    .tiny{ font-size: 11px; color:#64748b; }
+
+    /* Modal for location add/edit */
+    .modalOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.45);
+      z-index: 60;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+    }
+    .modalOverlay.open{ display:flex; }
+    .modal{
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255,255,255,.97);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .modalTop{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; }
+    .modalTitle{ font-weight: 900; color:#0f172a; }
+    .modalClose{ width:36px; height:36px; border-radius:999px; display:grid; place-items:center; cursor:pointer; background: rgba(15,23,42,.06); }
+    .modalClose:active{ transform: scale(.95); }
+    .modalActions{ display:flex; gap:10px; margin-top: 12px; }
+    .modalActions .btn{ border-radius: 14px; }
+
+    /* Small screens */
+    @media (max-width: 360px){
+      .adminPanel{ width: 92vw; }
+      .logo{ height: 50px; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Mesh Background -->
   <div class="bg-mesh"><canvas id="mesh"></canvas></div>
-  <div class="app-container">
-    <aside class="dev-panel" id="devPanel">
-      <h3>Mode</h3><button class="btn" id="goUserMode">Switch to User Mode</button><div class="vsep"></div>
-      <h3>Locations</h3>
-      <div class="grid">
-        <button class="btn" id="addPoint">+ Add point</button>
-        <button class="btn" id="setHere">Set "You are here"</button>
-      </div>
-      <div class="vsep"></div>
-      <h3>Routing</h3>
-      <div><label for="fromSel">From</label><select id="fromSel"></select></div>
-      <div><label for="toSel">To</label><select id="toSel"></select></div>
-      <div class="grid">
-        <button class="btn" id="btnDraw">Draw path</button>
-        <button class="btn" id="btnUndo" disabled>Undo</button>
-      </div>
-      <button class="btn primary" id="btnSave" disabled style="margin-top: 8px;">Save route</button>
-      <button class="btn danger" id="btnDelete" style="margin-top: 8px;">Delete route</button>
-      <div class="vsep"></div>
-      <h3>Data Management</h3>
-      <div class="grid"><button class="btn" id="btnExport">Export JSON</button><label class="btn" for="importFile">Import JSON</label><input id="importFile" class="hidden" type="file" accept="application/json" /></div>
-    </aside>
 
-    <main class="map-container">
-      <svg id="svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <image id="bg" href="image.png" x="0" y="0" width="100" height="100" />
-        <g id="pins"></g>
-        <path id="routeBg" d=""></path>
-        <path id="route" d=""></path>
-        <path id="draft" d=""></path>
-        <g id="arrow" transform="translate(-5,-5)"><path class="tail" d="M-0,-0 L-0,0 L-0,0 Z" /></g>
-      </svg>
+  <!-- MAP VIEW -->
+  <div class="viewport" id="viewport">
+    <svg id="svg" viewBox="0 0 1000 1344" preserveAspectRatio="xMidYMid meet" aria-label="Wayfinding map">
+      <defs>
+        <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7dd3fc"/>
+          <stop offset="60%" stop-color="#60a5fa"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
 
-      <div class="ui-overlay top-bar">
-        <div class="logo-container"><img src="logo.png" alt="Logo"></div>
-        <div class="search-wrapper">
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="searchInput" placeholder="Search">
+      <!-- Pan/Zoom root (Panzoom writes transform here) -->
+      <g id="panzoomRoot">
+        <!-- Rotation root (we apply rotate() transform here) -->
+        <g id="rotateRoot">
+          <!-- Background Image -->
+          <image id="bgImage" href="image.png" width="1000" height="1344" x="0" y="0" />
+
+          <!-- Admin network layers -->
+          <g id="layerEdges"></g>
+          <g id="layerNodes"></g>
+
+          <!-- User route -->
+          <path id="routePath" d="" />
+
+          <!-- Admin manual route preview -->
+          <path id="editRoutePath" d="" />
+          <g id="layerRoutePoints"></g>
+
+          <!-- Pins -->
+          <g id="layerPins"></g>
+
+          <!-- You Are Here -->
+          <g id="youMarker" class="you-marker" style="display:none">
+            <circle class="pulse" r="20" cx="0" cy="0"></circle>
+            <circle class="core" r="10" cx="0" cy="0"></circle>
+            <text id="youLabel" y="-26">You Are Here</text>
+          </g>
+
+          <!-- Start / End bubbles -->
+          <g id="startMarker" class="endpoint start" style="display:none">
+            <circle class="ring" r="12" cx="0" cy="0"></circle>
+            <text>S</text>
+          </g>
+          <g id="endMarker" class="endpoint end" style="display:none">
+            <circle class="ring" r="12" cx="0" cy="0"></circle>
+            <text>E</text>
+          </g>
+
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- UI -->
+  <div class="ui">
+    <div class="topbar">
+      <!-- Keep logo as-is -->
+      <img src="logo.png" alt="MapIt Pro" class="logo">
+
+      <div class="searchWrap">
+        <div class="searchBox">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="searchInput" type="text" placeholder="Search a room, office, exit..." autocomplete="off" />
+          <div class="clearBtn" id="clearSearch" title="Clear" style="display:none"><i class="fa-solid fa-xmark"></i></div>
+        </div>
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="routeCard" id="routeCard">
+        <div class="routeLeft">
+          <div class="routeTitle" id="routeTitle">Directions</div>
+          <div class="routeSub" id="routeSub">Tap a pin or search to start</div>
+        </div>
+        <div class="routeActions">
+          <div class="pill primary" id="focusRouteBtn" title="Reset view">
+            <i class="fa-solid fa-crosshairs"></i> Focus
           </div>
-          <div id="suggestions" class="suggestions"></div>
-        </div>
-        <a href="https://awaizahmed.com" target="_blank" class="created-by">Created by Awaiz Ahmed</a>
-      </div>
-
-      <div class="side-controls">
-        <div class="dev-mode-btn" id="goDevMode"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-        <div class="dev-mode-btn" id="rotateMap"><i class="fa-solid fa-rotate"></i></div>
-      </div>
-
-      <div class="ui-overlay bottom-bar">
-        <div class="category-filters" id="category-filters">
-          <div class="category-item active" data-category="all"><span class="icon walk"><i class="fa-solid fa-map-location-dot"></i></span><span>All</span></div>
-          <div class="category-item" data-category="offices"><span class="icon offices"><i class="fa-solid fa-building"></i></span><span>Offices</span></div>
-          <div class="category-item" data-category="training"><span class="icon training"><i class="fa-solid fa-chalkboard-user"></i></span><span>Training</span></div>
-          <div class="category-item" data-category="services"><span class="icon services"><i class="fa-solid fa-info-circle"></i></span><span>Services</span></div>
+          <div class="pill" id="clearRouteBtn" title="Clear route">
+            <i class="fa-solid fa-xmark"></i> Clear
+          </div>
         </div>
       </div>
-    </main>
+
+      <div class="bottombar">
+        <div class="controls">
+          <div class="fab" id="rotateBtn" title="Rotate"><i class="fa-solid fa-rotate-right"></i></div>
+          <div class="fab" id="resetBtn" title="Reset"><i class="fa-solid fa-compress"></i></div>
+        </div>
+        <div class="controls">
+          <div class="fab" id="adminBtn" title="Admin"><i class="fa-solid fa-gear"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ADMIN PANEL -->
+  <div class="adminPanel" id="adminPanel" aria-label="Admin console">
+    <div class="adminHeader">
+      <span>Admin Console</span>
+      <i class="fa-solid fa-xmark" id="closeAdmin" style="cursor:pointer"></i>
+    </div>
+
+    <div class="adminBody">
+
+      <div class="card">
+        <div class="cardTitle">Editor Mode</div>
+        <div class="btnRow" style="margin-bottom:10px;">
+          <button class="btn active" id="modeView">View</button>
+          <button class="btn" id="modeNetwork">Path Network</button>
+          <button class="btn" id="modePins">Locations</button>
+        </div>
+        <div class="hint">
+          <b>Path Network:</b> tap map to add nodes, tap Node A then Node B to link, drag nodes to adjust.<br>
+          <b>Locations:</b> tap map to add, tap a pin to edit, drag pins to move.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardTitle">Kiosk Configuration</div>
+
+        <div class="field">
+          <label>Kiosk id</label>
+          <input id="kioskIdInput" list="kioskOptions" placeholder="kiosk-1">
+          <datalist id="kioskOptions"></datalist>
+          <div class="tiny">Tip: use different IDs for different iPads.</div>
+        </div>
+
+        <div class="btnRow">
+          <button class="btn" id="useKioskBtn">Use kiosk</button>
+          <button class="btn primary" id="setKioskLocBtn">Place “You Are Here”</button>
+        </div>
+
+        <div class="tiny" id="currentKioskLabel" style="margin-top:10px; font-weight:850; color:#1d4ed8;"></div>
+      </div>
+
+      <div class="card">
+        <div class="cardTitle">Manual Routes (Per Location)</div>
+
+        <div class="field">
+          <label>Location</label>
+          <select id="routeLocationSelect"></select>
+        </div>
+
+        <div class="tiny" id="routeInfo">No location selected.</div>
+
+        <div class="btnRow" style="margin-top:10px;">
+          <button class="btn primary" id="toggleRouteEditBtn">Draw / Edit</button>
+          <button class="btn" id="undoRoutePointBtn">Undo</button>
+        </div>
+
+        <div class="btnRow" style="margin-top:10px;">
+          <button class="btn danger" id="clearManualRouteBtn">Clear manual route</button>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          While drawing: <b>tap</b> to add waypoints. Use <b>Undo</b> for last point.
+          The route is saved for the <b>active kiosk</b>.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardTitle">Data</div>
+        <div class="btnRow" style="margin-bottom:10px;">
+          <button class="btn" id="saveBtn"><i class="fa-solid fa-floppy-disk"></i> Save (this device)</button>
+          <button class="btn" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export JSON</button>
+        </div>
+
+        <label class="btn" style="display:block; text-align:center; margin-bottom:10px;">
+          <i class="fa-solid fa-file-import"></i> Import JSON
+          <input type="file" id="importInput" hidden accept=".json">
+        </label>
+
+        <button class="btn danger" id="clearBtn"><i class="fa-solid fa-triangle-exclamation"></i> Reset everything</button>
+        <div class="tiny" style="margin-top:10px;">Export a JSON backup before resetting.</div>
+      </div>
+
+      <div class="card" id="selectionCard" style="display:none;">
+        <div class="cardTitle" style="color:#b91c1c;">Selection</div>
+        <div class="tiny" id="selectionInfo" style="margin-bottom:10px;"></div>
+        <div class="btnRow">
+          <button class="btn danger" id="deleteSelectedBtn">Delete selected</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOCATION MODAL -->
+  <div class="modalOverlay" id="locModalOverlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modalTop">
+        <div class="modalTitle" id="locModalTitle">Location</div>
+        <div class="modalClose" id="locModalClose"><i class="fa-solid fa-xmark"></i></div>
+      </div>
+
+      <div class="field">
+        <label>Name</label>
+        <input id="locNameInput" placeholder="e.g. Office 101">
+      </div>
+
+      <div class="field">
+        <label>Category</label>
+        <select id="locCatSelect">
+          <option value="office">Office</option>
+          <option value="training">Training</option>
+          <option value="services">Services</option>
+          <option value="exit">Exit</option>
+          <option value="general">General</option>
+        </select>
+      </div>
+
+      <div class="tiny" id="locCoordsLabel"></div>
+
+      <div class="modalActions">
+        <button class="btn" id="locCancelBtn">Cancel</button>
+        <button class="btn primary" id="locSaveBtn">Save</button>
+        <button class="btn danger" id="locDeleteBtn" style="display:none;">Delete</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    /* Background mesh animation (unchanged) */
-    (function(){
-      const canvas = document.getElementById('mesh'); if(!canvas) return; const ctx = canvas.getContext('2d');
-      let w=0,h=0,dpr=1, nodes=[], maxLinks=110, nodeCount=0;
-      const MAX_D = 140, DOT_R = 1.5, SPEED = 0.06; let last=0, hueBase=210;
-      function resize(){
-        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-        w = canvas.clientWidth; h = canvas.clientHeight;
-        canvas.width = w*dpr; canvas.height = h*dpr;
-        ctx.setTransform(dpr,0,0,dpr,0,0); nodeCount = Math.max(40, Math.min(120, Math.floor((w*h)/18000)));
-        nodes = new Array(nodeCount).fill(0).map(()=>({ x: Math.random()*w, y: Math.random()*h, vx:(Math.random()*2-1)*SPEED, vy:(Math.random()*2-1)*SPEED }));
+    /********************************************************************
+     * MapIt Pro - Wayfinding (Fixed pathways + manual routes + sleeker UI)
+     *
+     * Key fixes / improvements:
+     *  - Pan/zoom & rotation now use SVG transforms (no CSS transforms),
+     *    so tap-to-coordinate mapping is reliable (this also fixes routing).
+     *  - Manual routes per location per kiosk: draw waypoints and save.
+     *  - Drag-to-move nodes and pins in admin.
+     ********************************************************************/
+
+    // --- CONSTANTS ---
+    const MAP = { w: 1000, h: 1344, center: { x: 500, y: 672 } };
+
+    const CONSTANTS = {
+      LOCAL_KEY: 'wayfinding_data_v5',
+      LEGACY_LOCAL_KEYS: ['wayfinding_data_v4','wayfinding_data_v3','wayfinding_data_v2'],
+      KIOSK_MAP_KEY: 'kiosk_device_origin_map',
+      KIOSK_ACTIVE_KEY: 'kiosk_device_active_id',
+      AUTH_USER: 'awaiz',
+      AUTH_PASS: '1234'
+    };
+
+    // --- STATE ---
+    const STATE = {
+      mode: 'view', // view | network | pins
+      rotation: 0,
+      nodes: [],          // { id:number, x:number, y:number, links:number[] }
+      nextNodeId: 1,
+      locations: [],      // { id:string, name, category, x, y, nodeId:number|null, routes?: { [kioskId]: [{x,y}...] } }
+      kioskMap: {},       // kioskId -> { x, y, nodeId?:number|null }
+      activeKioskId: 'kiosk-1',
+
+      // selection / editor
+      selectedNodeId: null,
+      selectedLocationId: null,
+
+      placingKiosk: false,
+
+      // manual route editor
+      routeEdit: {
+        active: false,
+        locationId: null,
+        kioskId: null,
+        points: [] // [{x,y}]
+      },
+
+      // runtime
+      panzoom: null,
+      tapStart: null,
+      drag: { type: null, id: null } // type: 'node'|'pin'|'routePoint'
+    };
+
+    // --- DOM HELPERS ---
+    const $ = (id) => document.getElementById(id);
+    const svg = $('svg');
+    const viewport = $('viewport');
+
+    const panzoomRoot = $('panzoomRoot');
+    const rotateRoot = $('rotateRoot');
+
+    const layers = {
+      edges: $('layerEdges'),
+      nodes: $('layerNodes'),
+      pins: $('layerPins'),
+      routePoints: $('layerRoutePoints')
+    };
+
+    const routePath = $('routePath');
+    const editRoutePath = $('editRoutePath');
+    const youMarker = $('youMarker');
+    const youLabel = $('youLabel');
+    const startMarker = $('startMarker');
+    const endMarker = $('endMarker');
+
+    // UI
+    const routeCard = $('routeCard');
+    const routeTitle = $('routeTitle');
+    const routeSub = $('routeSub');
+    const toastEl = $('toast');
+
+    // Admin
+    const adminPanel = $('adminPanel');
+    const selectionCard = $('selectionCard');
+    const selectionInfo = $('selectionInfo');
+
+    const routeLocationSelect = $('routeLocationSelect');
+    const routeInfo = $('routeInfo');
+
+    // Modal
+    const locModalOverlay = $('locModalOverlay');
+    const locModalTitle = $('locModalTitle');
+    const locNameInput = $('locNameInput');
+    const locCatSelect = $('locCatSelect');
+    const locCoordsLabel = $('locCoordsLabel');
+    const locDeleteBtn = $('locDeleteBtn');
+
+    // --- UTIL ---
+    function createSVG(tag, attrs = {}) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      return el;
+    }
+
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+    function toast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => toastEl.classList.remove('show'), 1600);
+    }
+
+    function uid(){
+      // simple stable id for kiosk app (no dependencies)
+      return 'loc-' + Math.random().toString(16).slice(2) + '-' + Date.now().toString(16);
+    }
+
+    function getActiveKioskPos(){
+      return STATE.kioskMap[STATE.activeKioskId] || null;
+    }
+
+    function getNode(id){
+      return STATE.nodes.find(n => n.id === id) || null;
+    }
+
+    function findNearestNode(x, y, skipId = null){
+      let best = null, bestD = Infinity;
+      for(const n of STATE.nodes){
+        if(skipId && n.id === skipId) continue;
+        const d = Math.hypot(n.x - x, n.y - y);
+        if(d < bestD){ bestD = d; best = n.id; }
       }
-      function step(ts){
-        if(!last) last = ts; const dt = ts - last; last = ts; ctx.clearRect(0,0,w,h); const hue = (hueBase + (ts/80))%360;
-        for(const n of nodes){ n.x += n.vx * dt; n.y += n.vy * dt; if(n.x<0||n.x>w) n.vx*=-1; if(n.y<0||n.y>h) n.vy*=-1; }
-        ctx.lineWidth = 1; let links = 0;
-        for(let i=0;i<nodes.length;i++){
-          const a = nodes[i];
-          for(let j=i+1;j<nodes.length;j++){
-            const b = nodes[j], dx=a.x-b.x, dy=a.y-b.y, d = Math.hypot(dx,dy);
-            if(d<MAX_D){
-              const alpha = (1 - d/MAX_D) * 0.18; ctx.strokeStyle = `hsla(${hue}, 30%, 75%, ${alpha})`;
-              ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-              if(++links>nodeCount*3 || links>maxLinks) break;
-            }
-          }
+      return best;
+    }
+
+    function ensureKioskNodeId(kioskId){
+      const k = STATE.kioskMap[kioskId];
+      if(!k) return;
+      if(typeof k.nodeId === 'number' || k.nodeId === null) return;
+      k.nodeId = STATE.nodes.length ? findNearestNode(k.x, k.y) : null;
+    }
+
+    function migrateData(d){
+      const out = {
+        nodes: Array.isArray(d.nodes) ? d.nodes.map(n => ({
+          id: Number(n.id),
+          x: Number(n.x),
+          y: Number(n.y),
+          links: Array.isArray(n.links) ? n.links.map(Number).filter(Number.isFinite) : []
+        })).filter(n => Number.isFinite(n.id) && Number.isFinite(n.x) && Number.isFinite(n.y)) : [],
+        locations: Array.isArray(d.locations) ? d.locations.map(l => ({
+          id: (l.id || uid()),
+          name: String(l.name || 'Untitled'),
+          category: String(l.category || 'general'),
+          x: Number(l.x),
+          y: Number(l.y),
+          nodeId: (l.nodeId === null || typeof l.nodeId === 'number') ? l.nodeId : null,
+          routes: (l.routes && typeof l.routes === 'object') ? l.routes : (l.path ? { default: l.path } : {}) // legacy support
+        })).filter(l => Number.isFinite(l.x) && Number.isFinite(l.y)) : [],
+        nextNodeId: Number.isFinite(d.nextNodeId) ? Number(d.nextNodeId) : 1,
+        kiosks: (d.kiosks && typeof d.kiosks === 'object') ? d.kiosks : (d.kioskMap && typeof d.kioskMap === 'object' ? d.kioskMap : {}),
+        activeKioskId: (d.activeKioskId ? String(d.activeKioskId) : '')
+      };
+
+      // Normalize links (remove broken ids, dedupe)
+      const nodeIds = new Set(out.nodes.map(n => n.id));
+      out.nodes.forEach(n => {
+        n.links = Array.from(new Set(n.links.filter(id => nodeIds.has(id) && id !== n.id)));
+      });
+
+      // Ensure bidirectional links
+      out.nodes.forEach(n => {
+        for(const lid of n.links){
+          const other = out.nodes.find(x => x.id === lid);
+          if(other && !other.links.includes(n.id)) other.links.push(n.id);
         }
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        for(const n of nodes){ ctx.beginPath(); ctx.arc(n.x, n.y, DOT_R, 0, Math.PI*2); ctx.fill(); }
-        requestAnimationFrame(step);
-      }
-      resize(); requestAnimationFrame(step); window.addEventListener('resize', resize);
-    })();
+      });
 
-    (function(){
-      const $=q=>document.querySelector(q);
-      const svg=$('#svg'), pinsLayer=$('#pins'), route=$('#route'), routeBg=$('#routeBg'), bg=$('#bg'), arrow=$('#arrow'), draft=$('#draft'), searchInput=$('#searchInput');
-      const goDevMode=$('#goDevMode'), goUserMode=$('#goUserMode'), fromSel=$('#fromSel'), toSel=$('#toSel');
-      const addPointBtn=$('#addPoint'), setHereBtn=$('#setHere'), btnDraw=$('#btnDraw'), btnUndo=$('#btnUndo');
-      const btnSave=$('#btnSave'), btnDelete=$('#btnDelete'), btnExport=$('#btnExport'), importFile=$('#importFile');
-      const rotateMapBtn = $('#rotateMap');
-      const suggestionsEl = document.getElementById('suggestions');
-
-      let ROUTES={}, MARKERS={}, YOU_POS=null;
-      let mode='user', placing=null, drawing=false, points=[], anim=null, devUnlocked=false, rotation = 0;
-
-      const LOCAL_STORAGE_KEY = 'wayfindingMapData';
-
-      /* ---------- Load/Save ---------- */
-      function loadDataFromLocal() {
-        const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedData) {
-          const data = JSON.parse(storedData);
-          ROUTES = data.routes || {};
-          MARKERS = data.markers || {};
-          YOU_POS = data.you || null;
-          normalizeRouteKeys();
-          renderPins(); fillSelects();
-        } else {
-          // Load from file (fixed to way.json)
-          fetch('way.json')
-            .then(r => r.json())
-            .then(data => {
-              ROUTES = data.routes || {};
-              MARKERS = data.markers || {};
-              YOU_POS = data.you || null;
-              normalizeRouteKeys();           // unify any arrows
-              renderPins(); fillSelects();
-              saveDataToLocal();
-              console.log('Loaded initial data from way.json');
-            })
-            .catch(err => console.error('Error loading initial data:', err));
-        }
-      }
-
-      function saveDataToLocal() {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ markers: MARKERS, routes: ROUTES, you: YOU_POS }));
-      }
-
-      // Accept both "YOU->X" and "YOU→X"; normalize to ASCII "->"
-      function normalizeRouteKeys(){
-        const fixed = {};
-        for (const k of Object.keys(ROUTES || {})) {
-          const kFixed = k.replace('→','->');
-          fixed[kFixed] = ROUTES[k];
-        }
-        ROUTES = fixed;
-      }
-
-      function setMode(newMode) {
-        if (newMode === 'dev' && !devUnlocked) {
-          const u=prompt('Username:'), p=prompt('Password:');
-          if (u==='awaiz' && p==='1234') devUnlocked = true; else { alert('Access denied.'); return; }
-        }
-        mode = newMode; document.body.classList.toggle('dev-mode', mode === 'dev'); clearRoute(); renderPins();
-      }
-
-      function fitToImage(){
-        const img=new Image();
-        img.onload=()=>{
-          const W=img.naturalWidth||768, H=img.naturalHeight||1344;
-          svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-          bg.setAttribute('width',W); bg.setAttribute('height',H);
-
-          const panzoomScript = document.createElement('script');
-          panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
-          panzoomScript.onload = () => {
-            const container = svg.parentElement;
-            const scaleX = container.clientWidth / W;
-            const scaleY = container.clientHeight / H;
-            const startScale = Math.min(scaleX, scaleY);
-            const panzoom = Panzoom(svg, { maxScale: 15, minScale: 0.3, startScale });
-            // Enable mouse wheel zoom on PC
-            container.addEventListener('wheel', panzoom.zoomWithWheel);
-          };
-          document.body.appendChild(panzoomScript);
-
-          loadDataFromLocal();
+      // Normalize kiosks structure
+      const kiosks = out.kiosks || {};
+      for(const key of Object.keys(kiosks)){
+        const k = kiosks[key];
+        if(!k) continue;
+        kiosks[key] = {
+          x: Number(k.x),
+          y: Number(k.y),
+          nodeId: (typeof k.nodeId === 'number' || k.nodeId === null) ? k.nodeId : null
         };
-        img.src=bg.getAttribute('href');
+      }
+      out.kiosks = kiosks;
+
+      return out;
+    }
+
+    function saveData(){
+      const data = {
+        nodes: STATE.nodes,
+        locations: STATE.locations,
+        nextNodeId: STATE.nextNodeId,
+        kiosks: STATE.kioskMap,
+        activeKioskId: STATE.activeKioskId
+      };
+      localStorage.setItem(CONSTANTS.LOCAL_KEY, JSON.stringify(data));
+      localStorage.setItem(CONSTANTS.KIOSK_MAP_KEY, JSON.stringify(STATE.kioskMap));
+      localStorage.setItem(CONSTANTS.KIOSK_ACTIVE_KEY, STATE.activeKioskId);
+    }
+
+    function loadData(){
+      let d = null;
+
+      // Load newest data format first, then fall back to older localStorage keys
+      let saved = localStorage.getItem(CONSTANTS.LOCAL_KEY);
+      if(!saved){
+        for(const k of (CONSTANTS.LEGACY_LOCAL_KEYS || [])){
+          saved = localStorage.getItem(k);
+          if(saved) break;
+        }
+      }
+      if(saved){
+        try { d = JSON.parse(saved); } catch(e){}
       }
 
-      /* ---------- Routing & Pins ---------- */
-      const keyFor = (f, t) => `${f}->${t}`; // use ASCII arrow to match way.json
+      // Merge in kiosk map storage if present
+      const kioskSaved = localStorage.getItem(CONSTANTS.KIOSK_MAP_KEY);
+      const activeSaved = localStorage.getItem(CONSTANTS.KIOSK_ACTIVE_KEY);
 
-      function drawPathD(list) {
-        if (!list || !list.length) return '';
-        const a = list[0];
-        return 'M ' + a.x + ' ' + a.y + ' L ' + list.map(p => p.x + ' ' + p.y).join(' ');
+      const migrated = migrateData(d || {});
+      STATE.nodes = migrated.nodes;
+      STATE.locations = migrated.locations;
+      STATE.nextNodeId = migrated.nextNodeId || 1;
+
+      STATE.kioskMap = migrated.kiosks || {};
+      if(kioskSaved){
+        try { STATE.kioskMap = { ...STATE.kioskMap, ...JSON.parse(kioskSaved) }; } catch(e){}
       }
 
-      function clearRoute() {
-        route.setAttribute('d', ''); routeBg.setAttribute('d', ''); draft.setAttribute('d', '');
-        if (anim) cancelAnimationFrame(anim);
-        arrow.setAttribute('transform', 'translate(-100,-100)');
+      STATE.activeKioskId = (activeSaved || migrated.activeKioskId || Object.keys(STATE.kioskMap)[0] || 'kiosk-1');
+
+      // ensure each kiosk has nodeId if possible
+      Object.keys(STATE.kioskMap).forEach(ensureKioskNodeId);
+
+      if(!STATE.kioskMap[STATE.activeKioskId] && Object.keys(STATE.kioskMap).length === 0){
+        // create stub kiosk entry
+        STATE.kioskMap[STATE.activeKioskId] = null;
       }
 
-      const ns = tag => document.createElementNS('http://www.w3.org/2000/svg', tag);
+      $('kioskIdInput').value = STATE.activeKioskId;
+      syncKioskOptions();
+      updateKioskLabel();
+    }
 
-      function renderPins(filterCategory = 'all') {
-        if (!MARKERS || !bg.getAttribute('width')) return;
-        pinsLayer.innerHTML = '';
-        const W = parseInt(bg.getAttribute('width')), H = parseInt(bg.getAttribute('height'));
-        const transform = `rotate(${rotation} ${W/2} ${H/2})`;
+    // --- PANZOOM + ROTATION ---
+    function initPanzoom(){
+      const pz = Panzoom(panzoomRoot, {
+        svg: true,
+        maxScale: 8,
+        minScale: 0.05,
+        contain: 'none' // allow free panning without boundary lock
+      });
+      STATE.panzoom = pz;
 
-        Object.entries(MARKERS).forEach(([name, p]) => {
-          const categoryOfMarker = p.category || 'general';
-          if (mode === 'user' && filterCategory !== 'all' && categoryOfMarker !== filterCategory) return;
-          const g = ns('g'); g.setAttribute('transform', `translate(${p.x},${p.y})`); g.style.cursor = 'pointer';
-          const c = ns('circle'); c.setAttribute('r', 8); c.style.fill = (mode === 'dev' ? '#7c3aed' : '#ef4444'); c.style.stroke = 'white'; c.style.strokeWidth = '2';
-          const t = ns('text'); t.setAttribute('x', 0); t.setAttribute('y', 24); t.textContent = name; t.setAttribute('text-anchor', 'middle');
-          g.append(c, t);
-          g.addEventListener('click', () => { if (mode === 'user') navigateTo(name); });
-          pinsLayer.appendChild(g);
+      viewport.addEventListener('wheel', (e) => {
+        // Let panzoom handle and prevent page scroll
+        e.preventDefault();
+        pz.zoomWithWheel(e);
+      }, { passive:false });
+
+      $('resetBtn').onclick = () => {
+        // True reset: rotation back to 0 + map centered + not over-zoomed
+        STATE.rotation = 0;
+        applyRotation();
+        fitMapToView(false);
+      };
+    }
+
+    // Default initial view (slightly zoomed out + centered)
+    const DEFAULT_FIT_SCALE = 0.90; // tweak if you want more/less zoomed out
+
+    function fitMapToView(animate = false){
+      if(!STATE.panzoom) return;
+      const s = DEFAULT_FIT_SCALE;
+
+      // Center the scaled map inside the SVG viewBox
+      const x = (MAP.w - MAP.w * s) / 2;
+      const y = (MAP.h - MAP.h * s) / 2;
+
+      // Reset to a clean baseline first (so repeated calls are deterministic)
+      try { STATE.panzoom.reset(); } catch(e) {}
+
+      // Apply zoom then pan
+      try { STATE.panzoom.zoom(s, { animate }); } catch(e) { STATE.panzoom.zoom(s); }
+      try { STATE.panzoom.pan(x, y, { animate }); } catch(e) { STATE.panzoom.pan(x, y); }
+    }
+
+
+    function applyRotation(){
+      rotateRoot.setAttribute('transform', `rotate(${STATE.rotation} ${MAP.center.x} ${MAP.center.y})`);
+      // Counter-rotate labels (keep upright in screen space)
+      refreshCounterRotation();
+      // Update kiosk marker position
+      updateYouMarker();
+      // Keep endpoints aligned
+      refreshEndpoints();
+    }
+
+    function refreshCounterRotation(){
+      // Any element with data-upright-y will be rotated around (0, y)
+      const labels = rotateRoot.querySelectorAll('[data-upright-y]');
+      labels.forEach(el => {
+        const y = Number(el.getAttribute('data-upright-y') || 0);
+        el.setAttribute('transform', `rotate(${-STATE.rotation} 0 ${y})`);
+      });
+    }
+
+    function toMapCoords(evt){
+      const ctm = rotateRoot.getScreenCTM();
+      if(!ctm) return null;
+      const pt = svg.createSVGPoint();
+      pt.x = evt.clientX;
+      pt.y = evt.clientY;
+      const p = pt.matrixTransform(ctm.inverse());
+      const x = Math.round(clamp(p.x, 0, MAP.w));
+      const y = Math.round(clamp(p.y, 0, MAP.h));
+      return { x, y };
+    }
+
+    // --- RENDER ---
+    function render(){
+      renderNetwork();
+      renderPins();
+      renderRouteEditorOverlay();
+      updateYouMarker();
+      syncRouteLocationSelect();
+      updateRouteInfo();
+    }
+
+    function renderNetwork(){
+      layers.edges.innerHTML = '';
+      layers.nodes.innerHTML = '';
+
+      if(STATE.mode !== 'network') return;
+
+      // Edges
+      const drawn = new Set();
+      for(const n of STATE.nodes){
+        const links = Array.isArray(n.links) ? n.links : [];
+        for(const lid of links){
+          const key = [n.id, lid].sort().join('-');
+          if(drawn.has(key)) continue;
+          drawn.add(key);
+          const t = getNode(lid);
+          if(!t) continue;
+          layers.edges.appendChild(createSVG('line', { x1:n.x, y1:n.y, x2:t.x, y2:t.y, class:'edge' }));
+        }
+      }
+
+      // Nodes
+      for(const n of STATE.nodes){
+        const c = createSVG('circle', { cx:n.x, cy:n.y, class:'node' });
+        if(STATE.selectedNodeId === n.id) c.classList.add('selected');
+
+        // Click to select / link
+        c.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(STATE.routeEdit.active) return;
+          handleNodeClick(n.id);
         });
 
-        if (YOU_POS) {
-          const g = ns('g'); g.setAttribute('transform', `translate(${YOU_POS.x},${YOU_POS.y})`);
-          const c = ns('circle'); c.setAttribute('r', 7); c.style.fill = '#007aff'; c.style.stroke = 'white'; c.style.strokeWidth = '3';
-          const t = ns('text'); t.setAttribute('x', 0); t.setAttribute('y', -16); t.textContent = 'You are here'; t.setAttribute('text-anchor', 'middle'); t.style.fontSize = '16px';
-          g.append(c, t); pinsLayer.appendChild(g);
-        }
-        [bg, pinsLayer, route, routeBg, draft].forEach(el => el.setAttribute('transform', transform));
-      }
+        // Drag to move
+        c.addEventListener('pointerdown', (e) => {
+          if(STATE.routeEdit.active) return;
+          e.preventDefault(); e.stopPropagation();
+          STATE.drag = { type:'node', id:n.id };
+          c.setPointerCapture(e.pointerId);
+        });
+        c.addEventListener('pointermove', (e) => {
+          if(STATE.drag.type !== 'node' || STATE.drag.id !== n.id) return;
+          e.preventDefault(); e.stopPropagation();
+          const p = toMapCoords(e);
+          if(!p) return;
+          n.x = p.x; n.y = p.y;
 
-      function showRoute(fromKey, toKey) {
+          // update any kiosk nodeId that was pointing at this node? Keep kiosk nodeId stable
+          // update selection routes if visible
+          renderNetwork();
+          renderRouteEditorOverlay();
+        });
+        c.addEventListener('pointerup', (e) => {
+          if(STATE.drag.type !== 'node' || STATE.drag.id !== n.id) return;
+          e.preventDefault(); e.stopPropagation();
+          STATE.drag = { type:null, id:null };
+          // re-snap location nodeIds to nearest
+          STATE.locations = STATE.locations.map(loc => ({
+            ...loc,
+            nodeId: STATE.nodes.length ? findNearestNode(loc.x, loc.y) : null
+          }));
+          Object.keys(STATE.kioskMap).forEach(kid => {
+            const k = STATE.kioskMap[kid];
+            if(k) k.nodeId = STATE.nodes.length ? findNearestNode(k.x, k.y) : null;
+          });
+          updateRouteInfo();
+          saveData();
+          render();
+        });
+
+        layers.nodes.appendChild(c);
+      }
+    }
+
+    function renderPins(){
+      layers.pins.innerHTML = '';
+
+      for(const loc of STATE.locations){
+        const g = createSVG('g', { class: 'pin-group', transform: `translate(${loc.x}, ${loc.y})` });
+        if(STATE.selectedLocationId === loc.id && STATE.mode === 'pins') g.classList.add('pin-selected');
+
+        const dot = createSVG('circle', { cx:0, cy:0, r:8, class:'pin-dot', fill: catColor(loc.category) });
+
+        // Name + category, kept upright
+        const nameText = createSVG('text', { y: 26, class:'pin-label' });
+        nameText.textContent = loc.name;
+        nameText.setAttribute('data-upright-y','26');
+        nameText.setAttribute('transform', `rotate(${-STATE.rotation} 0 26)`);
+
+        const subText = createSVG('text', { y: 42, class:'pin-sub' });
+        subText.textContent = prettyCat(loc.category);
+        subText.setAttribute('data-upright-y','42');
+        subText.setAttribute('transform', `rotate(${-STATE.rotation} 0 42)`);
+
+        g.append(dot, nameText, subText);
+
+        // Click behavior
+        g.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(STATE.routeEdit.active) {
+            // In route-edit, tapping pins selects location in dropdown
+            setSelectedLocation(loc.id);
+            return;
+          }
+
+          if(STATE.mode === 'pins'){
+            setSelectedLocation(loc.id);
+            openLocationModal('edit', loc.id);
+          } else {
+            navigateTo(loc.id);
+          }
+        });
+
+        // Drag in pins mode
+        g.addEventListener('pointerdown', (e) => {
+          if(STATE.mode !== 'pins') return;
+          if(STATE.routeEdit.active) return;
+          e.preventDefault(); e.stopPropagation();
+          STATE.drag = { type:'pin', id: loc.id };
+          g.setPointerCapture(e.pointerId);
+        });
+        g.addEventListener('pointermove', (e) => {
+          if(STATE.drag.type !== 'pin' || STATE.drag.id !== loc.id) return;
+          e.preventDefault(); e.stopPropagation();
+          const p = toMapCoords(e);
+          if(!p) return;
+          loc.x = p.x; loc.y = p.y;
+          loc.nodeId = STATE.nodes.length ? findNearestNode(loc.x, loc.y) : null;
+          renderPins();
+          renderRouteEditorOverlay();
+        });
+        g.addEventListener('pointerup', (e) => {
+          if(STATE.drag.type !== 'pin' || STATE.drag.id !== loc.id) return;
+          e.preventDefault(); e.stopPropagation();
+          STATE.drag = { type:null, id:null };
+          saveData();
+          render();
+        });
+
+        layers.pins.appendChild(g);
+      }
+      refreshCounterRotation();
+    }
+
+    function updateYouMarker(){
+      const pos = getActiveKioskPos();
+      if(pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)){
+        youMarker.style.display = 'block';
+        youMarker.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+        youLabel.setAttribute('data-upright-y','-26');
+        youLabel.setAttribute('transform', `rotate(${-STATE.rotation} 0 -26)`);
+      } else {
+        youMarker.style.display = 'none';
+      }
+    }
+
+    function refreshEndpoints(){
+      const show = routePath.getAttribute('d') && routePath.getAttribute('d').trim().length > 0;
+      if(!show){
+        startMarker.style.display = 'none';
+        endMarker.style.display = 'none';
+        return;
+      }
+      // Start/end are stored in data attributes
+      const sx = Number(routePath.getAttribute('data-sx'));
+      const sy = Number(routePath.getAttribute('data-sy'));
+      const ex = Number(routePath.getAttribute('data-ex'));
+      const ey = Number(routePath.getAttribute('data-ey'));
+      if(Number.isFinite(sx) && Number.isFinite(sy)){
+        startMarker.style.display = 'block';
+        startMarker.setAttribute('transform', `translate(${sx}, ${sy})`);
+      }
+      if(Number.isFinite(ex) && Number.isFinite(ey)){
+        endMarker.style.display = 'block';
+        endMarker.setAttribute('transform', `translate(${ex}, ${ey})`);
+      }
+    }
+
+    // --- CATEGORIES ---
+    function catColor(cat){
+      const c = String(cat || 'general').toLowerCase();
+      if(c.includes('office')) return '#22c55e';
+      if(c.includes('train')) return '#f59e0b';
+      if(c.includes('service')) return '#a855f7';
+      if(c.includes('exit')) return '#ef4444';
+      return '#64748b';
+    }
+    function prettyCat(cat){
+      const c = String(cat || 'general').toLowerCase();
+      if(c.includes('office')) return 'Office';
+      if(c.includes('train')) return 'Training';
+      if(c.includes('service')) return 'Services';
+      if(c.includes('exit')) return 'Exit';
+      return 'General';
+    }
+
+    // --- INTERACTION (Tap vs Pan) ---
+    svg.addEventListener('pointerdown', (e) => {
+      STATE.tapStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+    });
+    svg.addEventListener('pointerleave', () => { STATE.tapStart = null; });
+    svg.addEventListener('pointerup', (e) => {
+      if(!STATE.tapStart) return;
+      const moved = Math.hypot(e.clientX - STATE.tapStart.x, e.clientY - STATE.tapStart.y);
+      const elapsed = Date.now() - STATE.tapStart.time;
+      STATE.tapStart = null;
+      // More lenient tap detection: allow up to 25px movement and 900ms duration
+      if(moved > 25 || elapsed > 900) return; // treat as pan/zoom
+      handleMapTap(e);
+    });
+
+    // Also listen on click as fallback for tap detection (helps desktop)
+    svg.addEventListener('click', (e) => {
+      // Avoid clicks coming from pins/nodes (they have their own handlers)
+      if(e.target.closest('.pin-group') || e.target.closest('.node')) return;
+      // Let kiosk placement, pins, and network add via simple click if pointer heuristics missed
+      if(STATE.placingKiosk || STATE.mode === 'pins' || STATE.mode === 'network'){
+        handleMapTap(e);
+      }
+    });
+
+    let lastTapTime = 0;
+    function handleMapTap(e){
+      // Debounce to prevent double-processing from pointer and click events
+      const now = Date.now();
+      if(now - lastTapTime < 100) return;
+      lastTapTime = now;
+
+      const p = toMapCoords(e);
+      if(!p) return;
+
+      // 1) placing kiosk
+      if(STATE.placingKiosk){
+        const kioskId = (STATE.activeKioskId || 'kiosk-1').trim();
+        STATE.kioskMap[kioskId] = { x: p.x, y: p.y, nodeId: STATE.nodes.length ? findNearestNode(p.x, p.y) : null };
+        STATE.placingKiosk = false;
+        $('setKioskLocBtn').textContent = 'Place “You Are Here”';
+        $('setKioskLocBtn').classList.remove('active');
+        updateKioskLabel();
+        updateYouMarker();
         clearRoute();
-        if (!fromKey || !toKey || !ROUTES) return;
-
-        const kAscii = `${fromKey}->${toKey}`;
-        const kUnicode = `${fromKey}→${toKey}`;
-        const arr = ROUTES[kAscii] || ROUTES[kUnicode];
-        if (!arr || !arr.length) return;
-
-        const d = drawPathD(arr);
-        route.setAttribute('d', d);
-        routeBg.setAttribute('d', d);
-        animateAlong(route);
+        saveData();
+        toast('Kiosk position saved.');
+        return;
       }
 
-      function animateAlong(path) {
-        const L = path.getTotalLength(); if (L === 0) return; let t0 = null; const dur = Math.max(2000, L * 5);
-        function step(ts) {
-          if (anim === null) return;
-          if (!t0) t0 = ts; const dlen = ((ts - t0) % dur) / dur * L;
-          const current_pos = path.getPointAtLength(dlen);
-          const ahead_pos = path.getPointAtLength(Math.min(dlen + 5, L));
-          const matrix = path.getScreenCTM();
-          const p1 = svg.createSVGPoint(); p1.x = current_pos.x; p1.y = current_pos.y;
-          const p2 = svg.createSVGPoint(); p2.x = ahead_pos.x; p2.y = ahead_pos.y;
-          const final_p1 = p1.matrixTransform(matrix);
-          const final_p2 = p2.matrixTransform(matrix);
-          const angle = Math.atan2(final_p2.y - final_p1.y, final_p2.x - final_p1.x) * 180 / Math.PI;
-          arrow.setAttribute('transform', `translate(${final_p1.x},${final_p1.y}) rotate(${angle})`);
-          anim = requestAnimationFrame(step);
+      // 2) manual route editing
+      if(STATE.routeEdit.active){
+        // Prevent adding points on top of UI items
+        if(e.target.closest('.pin-group') || e.target.closest('.node')) return;
+        STATE.routeEdit.points.push({ x: p.x, y: p.y });
+        renderRouteEditorOverlay();
+        updateRouteInfo();
+        return;
+      }
+
+      // Ignore taps on nodes/pins
+      if(e.target.closest('.pin-group') || e.target.closest('.node')) return;
+
+      // 3) network mode: add node
+      if(STATE.mode === 'network'){
+        const newNode = { id: STATE.nextNodeId++, x: p.x, y: p.y, links: [] };
+        if(STATE.selectedNodeId){
+          const prev = getNode(STATE.selectedNodeId);
+          if(prev && !prev.links.includes(newNode.id)){
+            prev.links.push(newNode.id);
+            newNode.links.push(prev.id);
+          }
         }
-        if (anim) cancelAnimationFrame(anim);
-        anim = requestAnimationFrame(step);
+        STATE.nodes.push(newNode);
+        STATE.selectedNodeId = newNode.id;
+        setSelectedLocation(null);
+        updateSelectionCard();
+        render();
+        return;
       }
 
-      const navigateTo = name => { if (!YOU_POS) return; showRoute('YOU', name); searchInput.value = name; hideSuggestions(); };
-
-      const addOpt = (el, val, txt) => { const o = document.createElement('option'); o.value = val; o.textContent = txt; el.appendChild(o); };
-      function fillSelects() {
-        if (!fromSel || !toSel) return;
-        fromSel.innerHTML = ''; toSel.innerHTML = '';
-        addOpt(fromSel, 'YOU', 'You are here');
-        Object.keys(MARKERS).sort().forEach(n => { addOpt(fromSel, n, n); addOpt(toSel, n, n); });
+      // 4) pins mode: add location (open modal)
+      if(STATE.mode === 'pins'){
+        openLocationModal('add', null, p);
+        return;
       }
+    }
 
-      /* ---------- Dev controls ---------- */
-      goDevMode.addEventListener('click', () => setMode('dev'));
-      goUserMode.addEventListener('click', () => setMode('user'));
-      addPointBtn.addEventListener('click', () => { placing = 'point'; });
-      setHereBtn.addEventListener('click', () => { placing = 'here'; });
+    // --- NODE SELECT / LINK ---
+    function handleNodeClick(nodeId){
+      const node = getNode(nodeId);
+      if(!node) return;
 
-      btnDraw.addEventListener('click', () => {
-        if (!toSel.value) return alert('Choose a destination.');
-        drawing = true; points = []; btnUndo.disabled = false; btnSave.disabled = false; draft.setAttribute('d', '');
-      });
-      btnUndo.addEventListener('click', () => {
-        if (!drawing || !points.length) return; points.pop(); draft.setAttribute('d', drawPathD(points));
-      });
-      btnSave.addEventListener('click', () => {
-        if (!drawing || !points.length) return;
-        const from = fromSel.value || 'YOU', to = toSel.value;
-        ROUTES[keyFor(from, to)] = points.slice();
-        saveDataToLocal();
-        drawing = false; points = []; draft.setAttribute('d', '');
-        btnUndo.disabled = true; btnSave.disabled = true; showRoute(from, to);
-      });
-      btnDelete.addEventListener('click', () => {
-        const from = fromSel.value || 'YOU', to = toSel.value;
-        if (!to) return alert('Select a route to delete.');
-        const k = keyFor(from, to);
-        if (ROUTES[k] && confirm(`Delete route: ${from} to ${to}?`)) {
-          delete ROUTES[k]; saveDataToLocal(); clearRoute();
+      // Link mode: if one selected already, connect to this node
+      if(STATE.selectedNodeId && STATE.selectedNodeId !== nodeId){
+        const a = getNode(STATE.selectedNodeId);
+        const b = node;
+        if(a && b){
+          if(!a.links.includes(b.id)) a.links.push(b.id);
+          if(!b.links.includes(a.id)) b.links.push(a.id);
         }
-      });
-      btnExport.addEventListener('click', () => {
-        const dataStr = JSON.stringify({ markers: MARKERS, you: YOU_POS, routes: ROUTES }, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob); const a = document.createElement('a');
-        a.href = url; a.download = 'way.json'; a.click(); URL.revokeObjectURL(url);
-      });
-      importFile.addEventListener('change', e => {
-        const f = e.target.files[0]; if (!f) return;
-        f.text().then(text => {
-          const data = JSON.parse(text);
-          MARKERS = data.markers || {}; YOU_POS = data.you || null; ROUTES = data.routes || {};
-          normalizeRouteKeys(); saveDataToLocal(); renderPins(); fillSelects();
-        }).catch(err => alert('Invalid JSON.'));
-        importFile.value = '';
-      });
+        STATE.selectedNodeId = nodeId;
+      } else {
+        STATE.selectedNodeId = (STATE.selectedNodeId === nodeId) ? null : nodeId;
+      }
 
-      const svgPoint = e => {
-        const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-        return pt.matrixTransform(svg.getScreenCTM().inverse());
+      setSelectedLocation(null);
+      updateSelectionCard();
+      render();
+      saveData();
+    }
+
+    // --- LOCATION SELECT ---
+    function setSelectedLocation(locId){
+      STATE.selectedLocationId = locId;
+      updateSelectionCard();
+      syncRouteLocationSelect();
+      updateRouteInfo();
+      renderPins();
+    }
+
+    function getSelectedLocation(){
+      return STATE.locations.find(l => l.id === STATE.selectedLocationId) || null;
+    }
+
+    // --- SELECTION CARD ---
+    function updateSelectionCard(){
+      const nodeSel = (STATE.mode === 'network' && STATE.selectedNodeId);
+      const locSel = (STATE.mode === 'pins' && STATE.selectedLocationId);
+
+      if(nodeSel){
+        selectionCard.style.display = 'block';
+        selectionInfo.textContent = `Node #${STATE.selectedNodeId}`;
+      } else if(locSel){
+        selectionCard.style.display = 'block';
+        const loc = getSelectedLocation();
+        selectionInfo.textContent = loc ? `Location: ${loc.name}` : 'Location selected';
+      } else {
+        selectionCard.style.display = 'none';
+        selectionInfo.textContent = '';
+      }
+    }
+
+    $('deleteSelectedBtn').onclick = () => {
+      if(STATE.mode === 'network' && STATE.selectedNodeId){
+        const removed = STATE.selectedNodeId;
+        STATE.nodes = STATE.nodes.filter(n => n.id !== removed);
+        // Remove links
+        STATE.nodes.forEach(n => n.links = (n.links || []).filter(l => l !== removed));
+
+        // Re-snap locations + kiosks
+        STATE.locations = STATE.locations.map(loc => ({ ...loc, nodeId: STATE.nodes.length ? findNearestNode(loc.x, loc.y) : null }));
+        Object.keys(STATE.kioskMap).forEach(kid => {
+          const k = STATE.kioskMap[kid];
+          if(k) k.nodeId = STATE.nodes.length ? findNearestNode(k.x, k.y) : null;
+        });
+
+        STATE.selectedNodeId = null;
+        saveData();
+        render();
+        toast('Node deleted.');
+      } else if(STATE.mode === 'pins' && STATE.selectedLocationId){
+        const loc = getSelectedLocation();
+        if(!loc) return;
+        if(confirm(`Delete location "${loc.name}"?`)){
+          STATE.locations = STATE.locations.filter(l => l.id !== loc.id);
+          if(STATE.routeEdit.locationId === loc.id) stopRouteEdit(true);
+          STATE.selectedLocationId = null;
+          saveData();
+          render();
+          toast('Location deleted.');
+        }
+      }
+    };
+
+    // --- MANUAL ROUTE EDITOR ---
+    function syncRouteLocationSelect(){
+      const prev = routeLocationSelect.value;
+      routeLocationSelect.innerHTML = '';
+
+      if(!STATE.locations.length){
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No locations yet';
+        routeLocationSelect.appendChild(opt);
+        routeLocationSelect.disabled = true;
+        return;
+      }
+      routeLocationSelect.disabled = false;
+
+      // Sort by name
+      const sorted = [...STATE.locations].sort((a,b) => a.name.localeCompare(b.name));
+      for(const loc of sorted){
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.name;
+        routeLocationSelect.appendChild(opt);
+      }
+
+      // Choose selected location if any
+      const wanted = STATE.selectedLocationId || prev || sorted[0].id;
+      routeLocationSelect.value = wanted;
+      if(wanted) STATE.selectedLocationId = wanted;
+    }
+
+    routeLocationSelect.addEventListener('change', () => {
+      const id = routeLocationSelect.value;
+      if(id) setSelectedLocation(id);
+      if(STATE.routeEdit.active){
+        // Switch editing target safely
+        startRouteEdit(id);
+      }
+    });
+
+    function getManualRoute(loc, kioskId){
+      if(!loc) return null;
+      const r = loc.routes || {};
+      if(r[kioskId] && Array.isArray(r[kioskId])) return r[kioskId];
+      if(r.default && Array.isArray(r.default)) return r.default;
+      return null;
+    }
+
+    function updateRouteInfo(){
+      const loc = getSelectedLocation();
+      if(!loc){
+        routeInfo.textContent = 'No location selected.';
+        return;
+      }
+      const kioskId = STATE.activeKioskId;
+      const manual = getManualRoute(loc, kioskId);
+      const pts = manual ? manual.length : 0;
+      const status = manual ? `Manual route saved (${pts} waypoint${pts===1?'':'s'}) for ${kioskId}.` : `No manual route saved for ${kioskId} (will use network if available).`;
+      const drawState = STATE.routeEdit.active ? 'Drawing is ON — tap the map to add waypoints.' : 'Drawing is OFF.';
+      routeInfo.textContent = status + ' ' + drawState;
+    }
+
+    $('toggleRouteEditBtn').onclick = () => {
+      const locId = routeLocationSelect.value;
+      if(!locId || locId === '') { toast('Add a location first.'); return; }
+      if(STATE.routeEdit.active){
+        stopRouteEdit(false);
+      } else {
+        startRouteEdit(locId);
+      }
+      updateRouteInfo();
+    };
+
+    function startRouteEdit(locId){
+      const loc = STATE.locations.find(l => l.id === locId);
+      if(!loc) return;
+
+      const kioskPos = getActiveKioskPos();
+      if(!kioskPos){
+        toast('Set “You Are Here” for the active kiosk first.');
+        return;
+      }
+
+      STATE.routeEdit.active = true;
+      STATE.routeEdit.locationId = locId;
+      STATE.routeEdit.kioskId = STATE.activeKioskId;
+
+      // Load existing route points (copy)
+      const existing = getManualRoute(loc, STATE.activeKioskId);
+      STATE.routeEdit.points = existing ? existing.map(p => ({ x:Number(p.x), y:Number(p.y) })) : [];
+
+      // UI
+      $('toggleRouteEditBtn').textContent = 'Finish drawing';
+      $('toggleRouteEditBtn').classList.add('active');
+      toast('Drawing on: tap map to add waypoints.');
+      renderRouteEditorOverlay();
+    }
+
+    function stopRouteEdit(cancel){
+      const loc = STATE.locations.find(l => l.id === STATE.routeEdit.locationId);
+      if(loc && !cancel){
+        if(!loc.routes || typeof loc.routes !== 'object') loc.routes = {};
+        // Save under active kiosk id
+        loc.routes[STATE.routeEdit.kioskId] = STATE.routeEdit.points.slice();
+        saveData();
+        toast('Manual route saved.');
+      } else if(cancel){
+        toast('Route edit cancelled.');
+      }
+
+      STATE.routeEdit.active = false;
+      STATE.routeEdit.locationId = null;
+      STATE.routeEdit.kioskId = null;
+      STATE.routeEdit.points = [];
+
+      $('toggleRouteEditBtn').textContent = 'Draw / Edit';
+      $('toggleRouteEditBtn').classList.remove('active');
+
+      editRoutePath.setAttribute('d','');
+      layers.routePoints.innerHTML = '';
+      updateRouteInfo();
+      render();
+    }
+
+    $('undoRoutePointBtn').onclick = () => {
+      if(!STATE.routeEdit.active){
+        toast('Turn on Draw/Edit first.');
+        return;
+      }
+      STATE.routeEdit.points.pop();
+      renderRouteEditorOverlay();
+      updateRouteInfo();
+    };
+
+    $('clearManualRouteBtn').onclick = () => {
+      const loc = getSelectedLocation();
+      if(!loc) return;
+      const kioskId = STATE.activeKioskId;
+
+      if(confirm(`Clear manual route for "${loc.name}" on ${kioskId}?`)){
+        if(loc.routes && loc.routes[kioskId]) delete loc.routes[kioskId];
+        if(STATE.routeEdit.active) STATE.routeEdit.points = [];
+        saveData();
+        renderRouteEditorOverlay();
+        updateRouteInfo();
+        toast('Manual route cleared.');
+      }
+    };
+
+    function renderRouteEditorOverlay(){
+      layers.routePoints.innerHTML = '';
+      if(!STATE.routeEdit.active) {
+        editRoutePath.setAttribute('d','');
+        return;
+      }
+
+      const loc = STATE.locations.find(l => l.id === STATE.routeEdit.locationId);
+      const kioskPos = getActiveKioskPos();
+      if(!loc || !kioskPos){
+        editRoutePath.setAttribute('d','');
+        return;
+      }
+
+      const points = [{ x:kioskPos.x, y:kioskPos.y }, ...STATE.routeEdit.points, { x:loc.x, y:loc.y }];
+      const cleaned = simplifyPath(points);
+      editRoutePath.setAttribute('d', roundedPathD(cleaned, 22));
+
+      // Render route points (draggable)
+      STATE.routeEdit.points.forEach((pt, idx) => {
+        const c = createSVG('circle', { cx:pt.x, cy:pt.y, r:7, class:'route-point' });
+
+        c.addEventListener('pointerdown', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          STATE.drag = { type:'routePoint', id: idx };
+          c.setPointerCapture(e.pointerId);
+        });
+        c.addEventListener('pointermove', (e) => {
+          if(STATE.drag.type !== 'routePoint' || STATE.drag.id !== idx) return;
+          e.preventDefault(); e.stopPropagation();
+          const p = toMapCoords(e);
+          if(!p) return;
+          pt.x = p.x; pt.y = p.y;
+          renderRouteEditorOverlay();
+        });
+        c.addEventListener('pointerup', (e) => {
+          if(STATE.drag.type !== 'routePoint' || STATE.drag.id !== idx) return;
+          e.preventDefault(); e.stopPropagation();
+          STATE.drag = { type:null, id:null };
+          updateRouteInfo();
+        });
+
+        layers.routePoints.appendChild(c);
+      });
+    }
+
+    // --- PATHFINDING (A*) ---
+    class MinHeap {
+      constructor(){ this.a = []; }
+      push(item){
+        this.a.push(item);
+        this._up(this.a.length - 1);
+      }
+      pop(){
+        if(this.a.length === 0) return null;
+        const top = this.a[0];
+        const end = this.a.pop();
+        if(this.a.length){ this.a[0] = end; this._down(0); }
+        return top;
+      }
+      get size(){ return this.a.length; }
+      _up(i){
+        while(i > 0){
+          const p = (i - 1) >> 1;
+          if(this.a[p].pri <= this.a[i].pri) break;
+          [this.a[p], this.a[i]] = [this.a[i], this.a[p]];
+          i = p;
+        }
+      }
+      _down(i){
+        const n = this.a.length;
+        while(true){
+          let l = i*2+1, r = l+1, m = i;
+          if(l < n && this.a[l].pri < this.a[m].pri) m = l;
+          if(r < n && this.a[r].pri < this.a[m].pri) m = r;
+          if(m === i) break;
+          [this.a[m], this.a[i]] = [this.a[i], this.a[m]];
+          i = m;
+        }
+      }
+    }
+
+    function aStar(startId, endId){
+      if(!getNode(startId) || !getNode(endId)) return [];
+
+      const open = new MinHeap();
+      open.push({ id:startId, pri:0 });
+
+      const came = new Map();
+      const g = new Map();
+      g.set(startId, 0);
+
+      const h = (id) => {
+        const a = getNode(id), b = getNode(endId);
+        return Math.hypot(a.x - b.x, a.y - b.y);
       };
-      svg.addEventListener('click', e => {
-        if (mode !== 'dev') return; const p = svgPoint(e);
-        if (placing) {
-          if (placing === 'point') {
-            const name = prompt('Location name:');
-            if (name && name.trim()) {
-              const cat = prompt('Category: (offices, training, services)', 'general');
-              MARKERS[name.trim()] = { x: Math.round(p.x), y: Math.round(p.y), category: cat ? cat.trim().toLowerCase() : 'general' };
-              saveDataToLocal(); renderPins(); fillSelects();
+
+      const f = new Map();
+      f.set(startId, h(startId));
+
+      const inOpen = new Set([startId]);
+
+      while(open.size){
+        const current = open.pop();
+        if(!current) break;
+        const cid = current.id;
+        inOpen.delete(cid);
+
+        if(cid === endId){
+          // reconstruct
+          const path = [];
+          let x = cid;
+          path.push(getNode(x));
+          while(came.has(x)){
+            x = came.get(x);
+            path.push(getNode(x));
+          }
+          return path.reverse().filter(Boolean);
+        }
+
+        const node = getNode(cid);
+        const neighbors = Array.isArray(node.links) ? node.links : [];
+        for(const nid of neighbors){
+          const nb = getNode(nid);
+          if(!nb) continue;
+
+          const cand = (g.get(cid) ?? Infinity) + Math.hypot(node.x - nb.x, node.y - nb.y);
+          if(cand < (g.get(nid) ?? Infinity)){
+            came.set(nid, cid);
+            g.set(nid, cand);
+            const pri = cand + h(nid);
+            f.set(nid, pri);
+            if(!inOpen.has(nid)){
+              open.push({ id:nid, pri });
+              inOpen.add(nid);
             }
-          } else if (placing === 'here') {
-            YOU_POS = { x: Math.round(p.x), y: Math.round(p.y) }; saveDataToLocal(); renderPins();
           }
-          placing = null;
-        } else if (drawing) {
-          points.push({ x: Math.round(p.x), y: Math.round(p.y) }); draft.setAttribute('d', drawPathD(points));
         }
-      });
-      window.addEventListener('keydown', e => {
-        if (drawing && e.key === 'Enter') btnSave.click();
-        if (drawing && e.key === 'Escape') { drawing = false; points = []; draft.setAttribute('d', ''); btnUndo.disabled = true; btnSave.disabled = true; }
-      });
+      }
+      return [];
+    }
 
-      $('#category-filters').addEventListener('click', e => {
-        const item = e.target.closest('.category-item'); if (!item) return;
-        $('#category-filters .active').classList.remove('active'); item.classList.add('active');
-        clearRoute(); renderPins(item.dataset.category);
-      });
+    // --- ROUTE BUILDING ---
+    function simplifyPath(points){
+      // 1) remove invalid + duplicates
+      const p = [];
+      for(const pt of points){
+        if(!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue;
+        const last = p[p.length-1];
+        if(!last || last.x !== pt.x || last.y !== pt.y) p.push({ x:pt.x, y:pt.y });
+      }
+      if(p.length <= 2) return p;
 
-      rotateMapBtn.addEventListener('click', () => {
-        rotation = (rotation + 90) % 360; renderPins();
-        if(route.getAttribute('d')) { animateAlong(route); }
-      });
+      // 2) remove near-collinear middle points
+      const out = [p[0]];
+      for(let i=1;i<p.length-1;i++){
+        const a = out[out.length-1];
+        const b = p[i];
+        const c = p[i+1];
 
-      /* ---------- Quick keyword + autocomplete ---------- */
-      const normalizeStr = s => (s || '').toLowerCase().replace(/['’`]/g,'').replace(/\s+/g,'');
-      const initialsKey = name => name.split(/\s+/).map(w=>w[0]).join('').toLowerCase().replace(/[^a-z0-9]/g,'');
+        const abx = b.x - a.x, aby = b.y - a.y;
+        const bcx = c.x - b.x, bcy = c.y - b.y;
 
-      function findMatches(q){
-        if(!q) return [];
-        const qn = normalizeStr(q);
-        const out = [];
-        for(const name of Object.keys(MARKERS || {})){
-          const nName = normalizeStr(name);
-          const nInit = initialsKey(name);
-          let score = -1;
-          if(nName.startsWith(qn)) score = 100 - (nName.length - qn.length);
-          else if(nInit.startsWith(qn)) score = 70 - (nInit.length - qn.length);
-          else if(nName.includes(qn)) score = 40 - nName.indexOf(qn);
-          if(score >= 0) out.push({ name, score });
+        const ab = Math.hypot(abx, aby);
+        const bc = Math.hypot(bcx, bcy);
+        if(ab < 1 || bc < 1){ continue; }
+
+        const dot = (abx*bcsafe(bcx) + aby*bcsafe(bcy)); // not used, keep simple
+        // collinearity via normalized cross product magnitude
+        const cross = Math.abs(abx*bcy - aby*bcx);
+        const norm = ab*bc;
+        const k = cross / norm; // 0 => collinear
+        if(k < 0.02){ // tweak
+          continue;
         }
-        out.sort((a,b)=>b.score - a.score || a.name.localeCompare(b.name));
-        return out.slice(0,8);
+        out.push(b);
+      }
+      out.push(p[p.length-1]);
+      return out;
+
+      function bcsafe(v){ return v; }
+    }
+
+    function roundedPathD(points, radius){
+      if(!points || points.length < 2) return '';
+      if(points.length === 2){
+        return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
       }
 
-      function renderSuggestions(list){
-        if(!list.length){
-          suggestionsEl.innerHTML = '<div class="suggestion-empty">No matches</div>';
-          suggestionsEl.style.display = 'block'; return;
+      const r = Math.max(4, Number(radius) || 18);
+      let d = `M ${points[0].x} ${points[0].y}`;
+
+      for(let i=1;i<points.length-1;i++){
+        const p0 = points[i-1], p1 = points[i], p2 = points[i+1];
+
+        const v0x = p1.x - p0.x, v0y = p1.y - p0.y;
+        const v1x = p2.x - p1.x, v1y = p2.y - p1.y;
+
+        const len0 = Math.hypot(v0x, v0y);
+        const len1 = Math.hypot(v1x, v1y);
+        if(len0 < 1 || len1 < 1){
+          d += ` L ${p1.x} ${p1.y}`;
+          continue;
         }
-        suggestionsEl.innerHTML = list.map((x,i)=>`
-          <div class="suggestion-item ${i===0?'active':''}" data-name="${x.name.replace(/"/g,'&quot;')}">
-            <i class="fa-solid fa-location-dot"></i> <span>${x.name}</span>
-          </div>`).join('');
-        suggestionsEl.style.display = 'block';
-      }
-      function hideSuggestions(){ suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; }
-      function getActiveItem(){ return suggestionsEl.querySelector('.suggestion-item.active'); }
-      function setActiveByIndex(idx){
-        const items = Array.from(suggestionsEl.querySelectorAll('.suggestion-item'));
-        items.forEach(el=>el.classList.remove('active'));
-        if(items[idx]) items[idx].classList.add('active');
+
+        const r0 = Math.min(r, len0 * 0.45);
+        const r1 = Math.min(r, len1 * 0.45);
+
+        const pA = { x: p1.x - (v0x/len0)*r0, y: p1.y - (v0y/len0)*r0 };
+        const pB = { x: p1.x + (v1x/len1)*r1, y: p1.y + (v1y/len1)*r1 };
+
+        d += ` L ${pA.x.toFixed(1)} ${pA.y.toFixed(1)} Q ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${pB.x.toFixed(1)} ${pB.y.toFixed(1)}`;
       }
 
-      searchInput.addEventListener('input', () => {
-        const q = searchInput.value.trim(); clearRoute();
-        if(!q){ hideSuggestions(); return; }
-        renderSuggestions(findMatches(q));
-      });
+      const last = points[points.length-1];
+      d += ` L ${last.x} ${last.y}`;
+      return d;
+    }
 
-      searchInput.addEventListener('keydown', e => {
-        const visible = suggestionsEl.style.display === 'block';
-        if(e.key === 'Escape'){ hideSuggestions(); return; }
-        if(e.key === 'Enter'){
-          e.preventDefault();
-          const q = searchInput.value.trim();
-          if(!q){ clearRoute(); hideSuggestions(); return; }
-          const active = getActiveItem();
-          if(active){ navigateTo(active.dataset.name); }
-          else {
-            const matches = findMatches(q);
-            if(matches.length) navigateTo(matches[0].name);
-            else alert('Location not found.');
+    function routeLength(points){
+      let s = 0;
+      for(let i=1;i<points.length;i++){
+        s += Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y);
+      }
+      return s;
+    }
+
+    function buildRoutePointsForLocation(loc){
+      const kioskPos = getActiveKioskPos();
+      if(!kioskPos) return { ok:false, reason:'no-kiosk', points:[] };
+      if(!loc) return { ok:false, reason:'no-loc', points:[] };
+
+      // 1) manual route (per kiosk) overrides everything
+      const manual = getManualRoute(loc, STATE.activeKioskId);
+      if(manual && manual.length){
+        const pts = simplifyPath([{x:kioskPos.x,y:kioskPos.y}, ...manual, {x:loc.x,y:loc.y}]);
+        return { ok:true, points: pts, source:'manual' };
+      }
+
+      // 2) network route (A*)
+      if(STATE.nodes.length >= 2){
+        const startNode = (typeof kioskPos.nodeId === 'number') ? kioskPos.nodeId : findNearestNode(kioskPos.x, kioskPos.y);
+        const endNode = (typeof loc.nodeId === 'number') ? loc.nodeId : findNearestNode(loc.x, loc.y);
+        if(startNode && endNode){
+          const nodePath = aStar(startNode, endNode);
+          if(nodePath.length){
+            const pts = simplifyPath([
+              {x:kioskPos.x, y:kioskPos.y},
+              ...nodePath.map(n => ({x:n.x, y:n.y})),
+              {x:loc.x, y:loc.y}
+            ]);
+            return { ok:true, points: pts, source:'network' };
           }
+        }
+      }
+
+      return { ok:false, reason:'no-route', points:[] };
+    }
+
+    // --- NAVIGATION (User) ---
+    function navigateTo(locationId){
+      const loc = STATE.locations.find(l => l.id === locationId);
+      if(!loc) return;
+
+      const kioskPos = getActiveKioskPos();
+      if(!kioskPos){
+        toast('Admin: set “You Are Here” first.');
+        return;
+      }
+
+      const built = buildRoutePointsForLocation(loc);
+      if(!built.ok){
+        toast(built.reason === 'no-route' ? 'No route available. Add a manual route or network nodes.' : 'Missing kiosk or location.');
+        clearRoute(false);
+        return;
+      }
+
+      const pts = built.points;
+      const d = roundedPathD(pts, 26);
+      routePath.setAttribute('d', d);
+      routePath.setAttribute('data-sx', String(pts[0].x));
+      routePath.setAttribute('data-sy', String(pts[0].y));
+      routePath.setAttribute('data-ex', String(pts[pts.length-1].x));
+      routePath.setAttribute('data-ey', String(pts[pts.length-1].y));
+      refreshEndpoints();
+
+      // Route UI
+      routeCard.style.display = 'flex';
+      routeTitle.textContent = loc.name;
+      const len = Math.round(routeLength(pts));
+      const srcLabel = built.source === 'manual' ? 'Manual' : 'Network';
+      routeSub.textContent = `${srcLabel} route • ${pts.length} points • ${len} units`;
+
+      // auto close suggestions
+      $('suggestions').style.display = 'none';
+
+      // highlight selection
+      setSelectedLocation(loc.id);
+      // in view mode, don't open modal
+      if(STATE.mode !== 'pins') STATE.selectedLocationId = null;
+
+      // focus view gently
+      focusOnRoute(pts);
+    }
+
+    function clearRoute(hideCard = true){
+      routePath.setAttribute('d','');
+      routePath.removeAttribute('data-sx');
+      routePath.removeAttribute('data-sy');
+      routePath.removeAttribute('data-ex');
+      routePath.removeAttribute('data-ey');
+      refreshEndpoints();
+      if(hideCard){
+        routeCard.style.display = 'none';
+        routeTitle.textContent = 'Directions';
+        routeSub.textContent = 'Tap a pin or search to start';
+      }
+    }
+
+    $('clearRouteBtn').onclick = () => clearRoute(true);
+
+    $('focusRouteBtn').onclick = () => {
+      // If route exists, focus on it, otherwise focus on kiosk
+      const d = routePath.getAttribute('d');
+      if(d && d.trim().length){
+        const sx = Number(routePath.getAttribute('data-sx'));
+        const sy = Number(routePath.getAttribute('data-sy'));
+        const ex = Number(routePath.getAttribute('data-ex'));
+        const ey = Number(routePath.getAttribute('data-ey'));
+        if(Number.isFinite(sx) && Number.isFinite(sy) && Number.isFinite(ex) && Number.isFinite(ey)){
+          focusOnRoute([{x:sx,y:sy},{x:ex,y:ey}]);
           return;
         }
-        if(visible && (e.key === 'ArrowDown' || e.key === 'ArrowUp')){
-          const items = Array.from(suggestionsEl.querySelectorAll('.suggestion-item'));
-          if(!items.length) return;
-          const current = getActiveItem();
-          let idx = current ? items.indexOf(current) : -1;
-          idx = e.key === 'ArrowDown' ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length;
-          setActiveByIndex(idx); e.preventDefault();
+      }
+      focusOnKiosk();
+    };
+
+    function focusOnKiosk(){
+      // Center the map in a comfortable default view
+      fitMapToView(true);
+    }
+
+
+    function focusOnRoute(points){
+      // For now, keep Focus predictable: use the same fit view.
+      // (If you want, I can upgrade this to true “fit route bounds” next.)
+      fitMapToView(true);
+    }
+
+
+    // --- SEARCH ---
+    const searchInput = $('searchInput');
+    const suggestions = $('suggestions');
+    const clearSearch = $('clearSearch');
+
+    function normalize(s){ return String(s||'').toLowerCase().trim(); }
+
+    searchInput.addEventListener('input', () => {
+      const q = normalize(searchInput.value);
+      clearSearch.style.display = q ? 'grid' : 'none';
+
+      if(!q){
+        suggestions.style.display = 'none';
+        return;
+      }
+
+      const matches = STATE.locations
+        .filter(l => normalize(l.name).includes(q) || normalize(l.category).includes(q))
+        .slice(0, 12);
+
+      suggestions.innerHTML = '';
+      if(!matches.length){
+        const d = document.createElement('div');
+        d.className = 'sItem';
+        d.innerHTML = '<div class="sText"><div class="sName">No results</div><div class="sMeta">Try a different name</div></div>';
+        suggestions.appendChild(d);
+      } else {
+        for(const m of matches){
+          const item = document.createElement('div');
+          item.className = 'sItem';
+          item.innerHTML = `
+            <i class="fa-solid fa-location-dot" style="color:${catColor(m.category)}"></i>
+            <div class="sText">
+              <div class="sName">${escapeHtml(m.name)}</div>
+              <div class="sMeta">${prettyCat(m.category)}</div>
+            </div>
+          `;
+          item.onclick = () => {
+            searchInput.value = m.name;
+            suggestions.style.display = 'none';
+            navigateTo(m.id);
+          };
+          suggestions.appendChild(item);
         }
-      });
+      }
 
-      suggestionsEl.addEventListener('click', e => {
-        const item = e.target.closest('.suggestion-item'); if(!item) return;
-        navigateTo(item.dataset.name);
-      });
+      suggestions.style.display = 'block';
+    });
 
-      document.addEventListener('click', e => {
-        const inside = e.target.closest('.search-wrapper');
-        if(!inside) hideSuggestions();
-      });
+    clearSearch.onclick = () => {
+      searchInput.value = '';
+      suggestions.style.display = 'none';
+      clearSearch.style.display = 'none';
+      clearRoute(true);
+    };
 
-      /* Init */
-      fitToImage(); // loadDataFromLocal() is called inside after dimensions are known
-    })();
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // --- ADMIN OPEN/CLOSE ---
+    $('adminBtn').onclick = () => {
+      const u = prompt('Username');
+      const p = prompt('Password');
+      if(u === CONSTANTS.AUTH_USER && p === CONSTANTS.AUTH_PASS){
+        document.body.classList.add('admin-mode');
+        adminPanel.classList.add('open');
+        toast('Admin enabled');
+      } else {
+        toast('Access denied');
+      }
+    };
+
+    $('closeAdmin').onclick = () => {
+      document.body.classList.remove('admin-mode');
+      adminPanel.classList.remove('open');
+      stopRouteEdit(true);
+      setMode('view');
+    };
+
+    // --- MODES ---
+    function setMode(m){
+      STATE.mode = m;
+      STATE.selectedNodeId = null;
+      STATE.selectedLocationId = null;
+      updateSelectionCard();
+      // Leaving route edit if switching modes
+      if(STATE.routeEdit.active && m !== 'pins'){
+        stopRouteEdit(true);
+      }
+
+      $('modeView').classList.toggle('active', m === 'view');
+      $('modeNetwork').classList.toggle('active', m === 'network');
+      $('modePins').classList.toggle('active', m === 'pins');
+
+      // Stop route edit if leaving pins/admin context
+      if(m !== 'pins' && STATE.routeEdit.active){
+        stopRouteEdit(false);
+      }
+
+      render();
+    }
+
+    $('modeView').onclick = () => setMode('view');
+    $('modeNetwork').onclick = () => setMode('network');
+    $('modePins').onclick = () => setMode('pins');
+
+    // --- ROTATE ---
+    $('rotateBtn').onclick = () => {
+      STATE.rotation = (STATE.rotation + 90) % 360;
+      applyRotation();
+    };
+
+    // --- KIOSK CONFIG ---
+    function syncKioskOptions(){
+      const list = $('kioskOptions');
+      list.innerHTML = '';
+      Object.keys(STATE.kioskMap).sort().forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        list.appendChild(opt);
+      });
+    }
+
+    function updateKioskLabel(){
+      const pos = getActiveKioskPos();
+      if(pos){
+        $('currentKioskLabel').textContent = `Active: ${STATE.activeKioskId} • (${pos.x}, ${pos.y})`;
+      } else {
+        $('currentKioskLabel').textContent = `Active: ${STATE.activeKioskId} • No position set`;
+      }
+    }
+
+    $('useKioskBtn').onclick = () => {
+      const id = ($('kioskIdInput').value || 'kiosk-1').trim() || 'kiosk-1';
+      STATE.activeKioskId = id;
+
+      // Ensure kiosk entry exists
+      if(!STATE.kioskMap[id]) STATE.kioskMap[id] = null;
+
+      localStorage.setItem(CONSTANTS.KIOSK_ACTIVE_KEY, id);
+      syncKioskOptions();
+      updateKioskLabel();
+      updateYouMarker();
+      clearRoute(true);
+      updateRouteInfo();
+      toast(`Using ${id}`);
+    };
+
+    $('setKioskLocBtn').onclick = () => {
+      const id = ($('kioskIdInput').value || STATE.activeKioskId || 'kiosk-1').trim() || 'kiosk-1';
+      STATE.activeKioskId = id;
+      if(!STATE.kioskMap[id]) STATE.kioskMap[id] = null;
+      localStorage.setItem(CONSTANTS.KIOSK_ACTIVE_KEY, id);
+
+      STATE.placingKiosk = !STATE.placingKiosk;
+      if(STATE.placingKiosk){
+        $('setKioskLocBtn').textContent = 'Tap map to place...';
+        $('setKioskLocBtn').classList.add('active');
+        toast('Tap the map to place “You Are Here”.');
+      } else {
+        $('setKioskLocBtn').textContent = 'Place “You Are Here”';
+        $('setKioskLocBtn').classList.remove('active');
+      }
+      updateKioskLabel();
+    };
+
+    // --- DATA BUTTONS ---
+    $('saveBtn').onclick = () => {
+      saveData();
+      toast('Saved on this device.');
+    };
+
+    $('exportBtn').onclick = () => {
+      const data = {
+        nodes: STATE.nodes,
+        locations: STATE.locations,
+        nextNodeId: STATE.nextNodeId,
+        kiosks: STATE.kioskMap,
+        activeKioskId: STATE.activeKioskId
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'mapit-wayfinding.json';
+      a.click();
+      toast('Exported JSON.');
+    };
+
+    $('importInput').onchange = (e) => {
+      const f = e.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try{
+          const d = JSON.parse(r.result);
+          const migrated = migrateData(d);
+
+          STATE.nodes = migrated.nodes;
+          STATE.locations = migrated.locations;
+          STATE.nextNodeId = migrated.nextNodeId || 1;
+          STATE.kioskMap = migrated.kiosks || {};
+          STATE.activeKioskId = migrated.activeKioskId || Object.keys(STATE.kioskMap)[0] || 'kiosk-1';
+
+          $('kioskIdInput').value = STATE.activeKioskId;
+          syncKioskOptions();
+          updateKioskLabel();
+
+          saveData();
+          stopRouteEdit(true);
+          clearRoute(true);
+          render();
+          toast('Import successful.');
+        } catch(err){
+          console.error(err);
+          toast('Invalid JSON file.');
+        }
+      };
+      r.readAsText(f);
+      e.target.value = '';
+    };
+
+    $('clearBtn').onclick = () => {
+      if(!confirm('This will wipe ALL nodes, locations, kiosks, and routes. Continue?')) return;
+      STATE.nodes = [];
+      STATE.locations = [];
+      STATE.nextNodeId = 1;
+      STATE.kioskMap = {};
+      STATE.activeKioskId = 'kiosk-1';
+      STATE.rotation = 0;
+      stopRouteEdit(true);
+      clearRoute(true);
+      applyRotation();
+
+      localStorage.removeItem(CONSTANTS.LOCAL_KEY);
+      localStorage.removeItem(CONSTANTS.KIOSK_MAP_KEY);
+      localStorage.removeItem(CONSTANTS.KIOSK_ACTIVE_KEY);
+
+      $('kioskIdInput').value = STATE.activeKioskId;
+      syncKioskOptions();
+      updateKioskLabel();
+      render();
+      toast('Reset complete.');
+    };
+
+    // --- LOCATION MODAL ---
+    const LOC_MODAL = {
+      mode: 'add', // add|edit
+      targetId: null,
+      coords: null
+    };
+
+    function openLocationModal(mode, locId, coords){
+      LOC_MODAL.mode = mode;
+      LOC_MODAL.targetId = locId;
+      LOC_MODAL.coords = coords || null;
+
+      locModalOverlay.classList.add('open');
+
+      if(mode === 'add'){
+        locModalTitle.textContent = 'Add Location';
+        locNameInput.value = '';
+        locCatSelect.value = 'office';
+        locDeleteBtn.style.display = 'none';
+        locCoordsLabel.textContent = coords ? `Position: (${coords.x}, ${coords.y})` : '';
+      } else {
+        const loc = STATE.locations.find(l => l.id === locId);
+        if(!loc) { closeLocationModal(); return; }
+        locModalTitle.textContent = 'Edit Location';
+        locNameInput.value = loc.name;
+        locCatSelect.value = normalizeCatValue(loc.category);
+        locDeleteBtn.style.display = 'inline-block';
+        locCoordsLabel.textContent = `Position: (${loc.x}, ${loc.y})`;
+      }
+    }
+
+    function normalizeCatValue(cat){
+      const c = String(cat||'general').toLowerCase();
+      if(c.includes('office')) return 'office';
+      if(c.includes('train')) return 'training';
+      if(c.includes('service')) return 'services';
+      if(c.includes('exit')) return 'exit';
+      return 'general';
+    }
+
+    function closeLocationModal(){
+      locModalOverlay.classList.remove('open');
+      LOC_MODAL.mode = 'add';
+      LOC_MODAL.targetId = null;
+      LOC_MODAL.coords = null;
+    }
+
+    $('locModalClose').onclick = closeLocationModal;
+    $('locCancelBtn').onclick = closeLocationModal;
+
+    $('locSaveBtn').onclick = () => {
+      const name = locNameInput.value.trim();
+      const cat = locCatSelect.value || 'general';
+
+      if(!name){
+        toast('Name is required.');
+        return;
+      }
+
+      if(LOC_MODAL.mode === 'add'){
+        const coords = LOC_MODAL.coords;
+        if(!coords){ toast('Missing position.'); return; }
+        const loc = {
+          id: uid(),
+          name,
+          category: cat,
+          x: coords.x,
+          y: coords.y,
+          nodeId: STATE.nodes.length ? findNearestNode(coords.x, coords.y) : null,
+          routes: {}
+        };
+        STATE.locations.push(loc);
+        saveData();
+        render();
+        toast('Location added.');
+        closeLocationModal();
+      } else {
+        const loc = STATE.locations.find(l => l.id === LOC_MODAL.targetId);
+        if(!loc) return;
+        loc.name = name;
+        loc.category = cat;
+        saveData();
+        render();
+        toast('Location updated.');
+        closeLocationModal();
+      }
+    };
+
+    locDeleteBtn.onclick = () => {
+      if(LOC_MODAL.mode !== 'edit') return;
+      const loc = STATE.locations.find(l => l.id === LOC_MODAL.targetId);
+      if(!loc) return;
+      if(confirm(`Delete "${loc.name}"?`)){
+        STATE.locations = STATE.locations.filter(l => l.id !== loc.id);
+        if(STATE.routeEdit.locationId === loc.id) stopRouteEdit(true);
+        saveData();
+        render();
+        toast('Location deleted.');
+        closeLocationModal();
+      }
+    };
+
+    // Clicking outside modal closes
+    locModalOverlay.addEventListener('click', (e) => {
+      if(e.target === locModalOverlay) closeLocationModal();
+    });
+
+    // --- INIT ---
+    window.addEventListener('load', () => {
+      loadData();
+      initPanzoom();
+      applyRotation();
+      fitMapToView(false);
+      render();
+      clearRoute(true);
+      toast('Ready');
+    });
+
   </script>
+
+  <!-- Mesh animation -->
+  <script>
+  (() => {
+    const c = document.getElementById('mesh');
+    const ctx = c.getContext('2d');
+    const DPR = Math.max(1, window.devicePixelRatio || 1);
+
+    const POINTS = 56;
+    const SPEED  = 0.32;
+    const LINK_DIST = 150;
+
+    let w=0, h=0, dots=[];
+
+    function resize(){
+      w = c.clientWidth;
+      h = c.clientHeight;
+      c.width = Math.floor(w * DPR);
+      c.height = Math.floor(h * DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+
+      dots = Array.from({length: POINTS}, () => ({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        dx: (Math.random()-0.5)*SPEED,
+        dy: (Math.random()-0.5)*SPEED
+      }));
+    }
+    window.addEventListener('resize', resize, { passive:true });
+    resize();
+
+    function step(){
+      ctx.clearRect(0,0,w,h);
+
+      // dots
+      ctx.fillStyle = 'rgba(226,232,240,.50)';
+      for(const p of dots){
+        p.x += p.dx; p.y += p.dy;
+        if(p.x < -10 || p.x > w+10) p.dx *= -1;
+        if(p.y < -10 || p.y > h+10) p.dy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // connections
+      for(let i=0;i<dots.length;i++){
+        for(let j=i+1;j<dots.length;j++){
+          const a=dots[i], b=dots[j];
+          const dx=a.x-b.x, dy=a.y-b.y;
+          const d2=dx*dx+dy*dy;
+          if(d2 < LINK_DIST*LINK_DIST){
+            const t = 1 - Math.sqrt(d2)/LINK_DIST;
+            ctx.strokeStyle = `rgba(226,232,240,${0.10*(0.4+0.6*t)})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+    step();
+  })();
+  </script>
+
 </body>
 </html>
